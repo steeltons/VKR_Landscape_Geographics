@@ -2,8 +2,13 @@ from fastapi import APIRouter, Response, HTTPException
 import json
 from models.waters_model import *
 from utils import get_db_connection
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from utils import get_db_connection
+from controllers.UserController import get_current_active_admin_user
 
 router = APIRouter()
+security = HTTPBearer()
 
 water_example = {
     "water_id": 1,
@@ -104,7 +109,8 @@ async def waters_get_one_water(water_id: int, is_need_pictures: bool = False):
         }
     }
 })
-async def waters_delete(water_id: int):
+async def waters_delete(water_id: int,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: удаление воды по её ID."""
     conn = get_db_connection()
     y = get_one_water(conn, water_id)
@@ -147,7 +153,8 @@ async def waters_delete(water_id: int):
         }
     }
 })
-async def waters_insert(water_name: str, water_description: str | None = None, water_picture_id: int | None = None):
+async def waters_insert(water_name: str, water_description: str | None = None, water_picture_id: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: добавление воды. На ввод подаются название, описание и идентификатор картинки."""
     conn = get_db_connection()
     if water_name is not None and len(water_name) == 0:
@@ -197,7 +204,8 @@ async def waters_insert(water_name: str, water_description: str | None = None, w
         }
     }
 })
-async def waters_update(water_id: int, water_name: str | None = None, water_description: str | None = None, water_picture_id: int | None = None):
+async def waters_update(water_id: int, water_name: str | None = None, water_description: str | None = None, water_picture_id: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: изменение параметров воды. На ввод подаются идентификатор, название, описание и идентификатор картинки."""
     conn = get_db_connection()
     if water_name is not None and len(water_name) == 0:

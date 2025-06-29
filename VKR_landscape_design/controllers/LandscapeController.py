@@ -2,8 +2,13 @@ from fastapi import APIRouter, Response, HTTPException
 import json
 from models.landscapes_model import *
 from utils import get_db_connection
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from utils import get_db_connection
+from controllers.UserController import get_current_active_admin_user
 
 router = APIRouter()
+security = HTTPBearer()
 
 landscape_example = {
     "landscape_id": 1,
@@ -73,7 +78,8 @@ async def landscapes_get_one_landscape(landscape_id: int, is_need_pictures: bool
         json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace("NaN", "null"),
         status_code=200
     )
-async def landscapes_delete(landscape_id: int):
+async def landscapes_delete(landscape_id: int,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: удаление ландшафта по его ID."""
     conn = get_db_connection()
     y = get_one_landscape(conn, landscape_id)
@@ -128,7 +134,8 @@ async def landscapes_delete(landscape_id: int):
         }
     }
 })
-async def landscapes_insert(landscape_name: str, landscape_code: str | None = None, landscape_description: str | None = None, landscape_area_in_square_kilometers: float | None = None, landscape_area_in_percents: float | None = None, landscape_KR: float | None = None, landscape_picture_id: int | None = None):
+async def landscapes_insert(landscape_name: str, landscape_code: str | None = None, landscape_description: str | None = None, landscape_area_in_square_kilometers: float | None = None, landscape_area_in_percents: float | None = None, landscape_KR: float | None = None, landscape_picture_id: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: добавление ландшафта. На ввод подаются название, код, описание, площадь в квадратных километрах, площадь в процентах, КР и идентификатор картинки."""
     conn = get_db_connection()
     if landscape_name is not None and len(landscape_name) == 0:
@@ -198,7 +205,8 @@ async def landscapes_insert(landscape_name: str, landscape_code: str | None = No
         }
     }
 })
-async def landscapes_update(landscape_id: int, landscape_name: str | None = None, landscape_code: str | None = None, landscape_description: str | None = None, landscape_area_in_square_kilometers: float | None = None, landscape_area_in_percents: float | None = None, landscape_KR: float | None = None, landscape_picture_id: int | None = None):
+async def landscapes_update(landscape_id: int, landscape_name: str | None = None, landscape_code: str | None = None, landscape_description: str | None = None, landscape_area_in_square_kilometers: float | None = None, landscape_area_in_percents: float | None = None, landscape_KR: float | None = None, landscape_picture_id: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: изменение параметров ландшафта. На ввод подаются идентификатор, название, код, описание, площадь в квадратных километрах, площадь в процентах, КР и идентификатор картинки."""
     conn = get_db_connection()
     if landscape_name is not None and len(landscape_name) == 0:

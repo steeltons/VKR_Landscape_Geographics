@@ -2,8 +2,13 @@ from fastapi import APIRouter, Response, HTTPException
 import json
 from models.foundations_model import *
 from utils import get_db_connection
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from utils import get_db_connection
+from controllers.UserController import get_current_active_admin_user
 
 router = APIRouter()
+security = HTTPBearer()
 
 foundation_example = {
     "foundation_id": 1,
@@ -108,7 +113,8 @@ async def foundations_get_one_foundation(foundation_id: int, is_need_pictures: b
         }
     }
 })
-async def foundations_delete(foundation_id: int):
+async def foundations_delete(foundation_id: int,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: удаление фундамента по его ID."""
     conn = get_db_connection()
     y = get_one_foundation(conn, foundation_id)
@@ -154,7 +160,8 @@ async def foundations_delete(foundation_id: int):
         }
     }
 })
-async def foundations_insert(foundation_name: str, foundation_description: str | None = None, foundation_depth_roof_root_in_meters: float | None = None, foundation_picture_id: int | None = None):
+async def foundations_insert(foundation_name: str, foundation_description: str | None = None, foundation_depth_roof_root_in_meters: float | None = None, foundation_picture_id: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: добавление фундамента. На ввод подаются название, описание, глубина кровли коренного фундамента и идентификатор картинки."""
     conn = get_db_connection()
     if foundation_name is not None and len(foundation_name) == 0:
@@ -209,7 +216,8 @@ async def foundations_insert(foundation_name: str, foundation_description: str |
         }
     }
 })
-async def foundations_update(foundation_id: int, foundation_name: str | None = None, foundation_description: str | None = None, foundation_depth_roof_root_in_meters: float | None = None, foundation_picture_id: int | None = None):
+async def foundations_update(foundation_id: int, foundation_name: str | None = None, foundation_description: str | None = None, foundation_depth_roof_root_in_meters: float | None = None, foundation_picture_id: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: изменение параметров фундамента. На ввод подаются идентификатор, название, описание, глубина кровли коренного фундамента и идентификатор картинки."""
     conn = get_db_connection()
     if foundation_name is not None and len(foundation_name) == 0:

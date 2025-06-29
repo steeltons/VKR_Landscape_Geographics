@@ -2,8 +2,13 @@ from fastapi import APIRouter, Response, HTTPException
 import json
 from models.picture_model import *
 from utils import get_db_connection
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from utils import get_db_connection
+from controllers.UserController import get_current_active_admin_user
 
 router = APIRouter()
+security = HTTPBearer()
 
 picture_example = {
     "picture_id": 1,
@@ -95,7 +100,8 @@ async def pictures_get_one_picture(picture_id: int):
         }
     }
 })
-async def pictures_delete(picture_id: int):
+async def pictures_delete(picture_id: int,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: удаление картинки по её ID."""
     conn = get_db_connection()
     y = get_one_picture(conn, picture_id)
@@ -126,7 +132,8 @@ async def pictures_delete(picture_id: int):
         }
     }
 })
-async def pictures_insert(picture_base64: str):
+async def pictures_insert(picture_base64: str,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: добавление картинки. На ввод подаётся строка в формате base64."""
     conn = get_db_connection()
     if len(picture_base64) == 0:
@@ -156,7 +163,8 @@ async def pictures_insert(picture_base64: str):
         }
     }
 })
-async def pictures_update(picture_id: int, picture_base64: str):
+async def pictures_update(picture_id: int, picture_base64: str,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: изменение данных картинки. На ввод подаются идентификатор и строка в формате base64."""
     conn = get_db_connection()
     if len(picture_base64) == 0:

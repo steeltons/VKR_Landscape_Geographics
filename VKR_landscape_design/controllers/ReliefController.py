@@ -2,8 +2,13 @@ from fastapi import APIRouter, Response, HTTPException
 import json
 from models.reliefs_model import *
 from utils import get_db_connection
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from utils import get_db_connection
+from controllers.UserController import get_current_active_admin_user
 
 router = APIRouter()
+security = HTTPBearer()
 
 relief_example = {
     "relief_id": 1,
@@ -105,7 +110,8 @@ async def reliefs_get_one_relief(relief_id: int, is_need_pictures: bool = False)
         }
     }
 })
-async def reliefs_delete(relief_id: int):
+async def reliefs_delete(relief_id: int,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: удаление рельефа по его ID."""
     conn = get_db_connection()
     y = get_one_relief(conn, relief_id)
@@ -148,7 +154,8 @@ async def reliefs_delete(relief_id: int):
         }
     }
 })
-async def reliefs_insert(relief_name: str, relief_description: str | None = None, relief_picture_id: int | None = None):
+async def reliefs_insert(relief_name: str, relief_description: str | None = None, relief_picture_id: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: добавление рельефа. На ввод подаются название, описание и идентификатор картинки."""
     conn = get_db_connection()
     if relief_name is not None and len(relief_name) == 0:
@@ -198,7 +205,8 @@ async def reliefs_insert(relief_name: str, relief_description: str | None = None
         }
     }
 })
-async def reliefs_update(relief_id: int, relief_name: str | None = None, relief_description: str | None = None, relief_picture_id: int | None = None):
+async def reliefs_update(relief_id: int, relief_name: str | None = None, relief_description: str | None = None, relief_picture_id: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: изменение параметров рельефа. На ввод подаются идентификатор, название, описание и идентификатор картинки."""
     conn = get_db_connection()
     if relief_name is not None and len(relief_name) == 0:

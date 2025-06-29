@@ -2,8 +2,13 @@ from fastapi import APIRouter, Response, HTTPException
 import json
 from models.connection_landscapes_waters_model import *
 from utils import get_db_connection
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from utils import get_db_connection
+from controllers.UserController import get_current_active_admin_user
 
 router = APIRouter()
+security = HTTPBearer()
 
 connection_landscape_water_example = {
     "connection_id": 1,
@@ -98,7 +103,8 @@ async def connections_landscapes_waters_get_one_connection(connection_id: int):
         }
     }
 })
-async def connections_landscapes_waters_delete(connection_id: int):
+async def connections_landscapes_waters_delete(connection_id: int,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: удаление связи ландшафта и воды по её ID."""
     conn = get_db_connection()
     y = get_one_connection_landscapes_waters(conn, connection_id)
@@ -117,7 +123,8 @@ async def connections_landscapes_waters_delete(connection_id: int):
         }
     }
 })
-async def connections_landscapes_waters_insert(landscape_id: int, water_id: int):
+async def connections_landscapes_waters_insert(landscape_id: int, water_id: int,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: добавление связи ландшафта и воды. На ввод подаются идентификаторы ландшафта и воды."""
     conn = get_db_connection()
     x = insert_connection_landscapes_waters(conn, landscape_id, water_id)
@@ -133,7 +140,8 @@ async def connections_landscapes_waters_insert(landscape_id: int, water_id: int)
         }
     }
 })
-async def connections_landscapes_waters_update(connection_id: int, landscape_id: int, water_id: int):
+async def connections_landscapes_waters_update(connection_id: int, landscape_id: int, water_id: int,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: изменение параметров связи ландшафта и воды. На ввод подаются идентификатор связи, идентификаторы ландшафта и воды."""
     conn = get_db_connection()
     x = update_connection_landscapes_waters(conn, connection_id, landscape_id, water_id)

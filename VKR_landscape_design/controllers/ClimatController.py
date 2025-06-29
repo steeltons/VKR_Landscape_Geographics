@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Response, HTTPException
-from fastapi.responses import JSONResponse
-import json
+from controllers.UserController import get_current_active_admin_user
 from models.climats_model import *
+from fastapi import APIRouter, Response, HTTPException
+import json
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from utils import get_db_connection
 
 router = APIRouter()
+security = HTTPBearer()
 
 # Пример данных для ответов
 climat_example = {
@@ -104,9 +107,17 @@ async def climats_get_one_climat(climat_id: int, is_need_pictures: bool = False)
                 "example": {"detail": "Ошибка: климат с данным ID не найден, потому удалить его невозможно."}
             }
         }
+    },
+    403: {
+        "description": "Forbidden",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: у пользователя недостаточно прав для выполнения этой операции."}
+            }
+        }
     }
 })
-async def climats_delete(climat_id: int):
+async def climats_delete(climat_id: int, current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: удаление климата по его ID."""
     conn = get_db_connection()
     y = get_one_climat(conn, climat_id)
@@ -149,7 +160,8 @@ async def climats_delete(climat_id: int):
         }
     }
 })
-async def climats_insert(climat_name: str, climat_description: str | None = None, climat_picture_id: int | None = None):
+async def climats_insert(climat_name: str, climat_description: str | None = None, climat_picture_id: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: добавление климата. На ввод подаются название, описание и идентификатор картинки."""
     conn = get_db_connection()
     if climat_name is not None and len(climat_name) == 0:
@@ -199,7 +211,8 @@ async def climats_insert(climat_name: str, climat_description: str | None = None
         }
     }
 })
-async def climats_update(climat_id: int, climat_name: str | None = None, climat_description: str | None = None, climat_picture_id: int | None = None):
+async def climats_update(climat_id: int, climat_name: str | None = None, climat_description: str | None = None, climat_picture_id: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: изменение параметров климата. На ввод подаются идентификатор, название, описание и идентификатор картинки."""
     conn = get_db_connection()
     if climat_name is not None and len(climat_name) == 0:

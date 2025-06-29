@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS users(
     user_fathername VARCHAR(20),
     user_age INTEGER,
     user_is_female INTEGER,
-    user_is_admin INTEGER,
+    user_is_admin VARCHAR(1),
     user_picture_id INTEGER
  );
 
@@ -166,11 +166,11 @@ CREATE TABLE IF NOT EXISTS connections_landscapes_climats(
 
 INSERT INTO users (user_login, user_password, user_email, user_surname, user_name, user_fathername, user_age, user_is_female, user_is_admin, user_picture_id)
 VALUES
-('root', '63a9f0ea7bb98050796b649e85481845', 'superadmin@yandex.ru', 'Иванов', 'Пётр', 'Сидорович', 23, 0, 1, 1), 
-('vanek2002', 'd5170a3e24af791ba3d674760619fcd9', 'vanya@yandex.ru', 'Иванов', 'Иван', 'Иванович', 32, 0, 0, 2), 
-('petrpervuy', 'bd51439026569fb110a08d5439f6b511', 'petrpervuy@gmail.com', 'Петров', 'Пётр', 'Петрович', 19, 0, 0, 3),  
-('mashapupkina', '41890cd2ac71e06b5f2c9ad5ccc07b45', 'pupkinama@gmail.com', 'Пупкина', 'Мария', 'Игоревна', 24, 1, 0, 4), 
-('lutiysidor', '9c1e4c1f8b81816130308604e102fd7c', 'supersid@mail.ru', 'Сидоров', 'Сидор', 'Сидорович', 25, 0, 1, 5); 
+('root', '63a9f0ea7bb98050796b649e85481845', 'superadmin@yandex.ru', 'Иванов', 'Пётр', 'Сидорович', 23, 0, 'true', 1), 
+('vanek2002', 'd5170a3e24af791ba3d674760619fcd9', 'vanya@yandex.ru', 'Иванов', 'Иван', 'Иванович', 32, 0, null, 2), 
+('petrpervuy', 'bd51439026569fb110a08d5439f6b511', 'petrpervuy@gmail.com', 'Петров', 'Пётр', 'Петрович', 19, 0, null, 3),  
+('mashapupkina', '41890cd2ac71e06b5f2c9ad5ccc07b45', 'pupkinama@gmail.com', 'Пупкина', 'Мария', 'Игоревна', 24, 1, null, 4), 
+('lutiysidor', '9c1e4c1f8b81816130308604e102fd7c', 'supersid@mail.ru', 'Сидоров', 'Сидор', 'Сидорович', 25, 0, 'true', 5); 
 
 INSERT INTO territories (territorie_landscape_id, territorie_description)
 VALUES
@@ -303,10 +303,5 @@ VALUES
 
 con.commit()
 
-# настоящий незахешированный пароль 1 пользователя - root
-# настоящий незахешированный пароль 2 пользователя - 12345abcde
-# настоящий незахешированный пароль 3 пользователя - !qwerty15
-# настоящий незахешированный пароль 4 пользователя - йцукен
-# настоящий незахешированный пароль 5 пользователя - abracadabra123
 
 cursor = con.cursor()

@@ -2,8 +2,13 @@ from fastapi import APIRouter, Response, HTTPException
 import json
 from models.coords_model import *
 from utils import get_db_connection
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from utils import get_db_connection
+from controllers.UserController import get_current_active_admin_user
 
 router = APIRouter()
+security = HTTPBearer()
 
 coord_example = {
     "coord_id": 1,
@@ -104,7 +109,8 @@ async def coords_get_one_coord(coord_id: int):
         }
     }
 })
-async def coords_delete(coord_id: int):
+async def coords_delete(coord_id: int,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: удаление координаты по её ID."""
     conn = get_db_connection()
     y = get_one_coord(conn, coord_id)
@@ -123,7 +129,8 @@ async def coords_delete(coord_id: int):
         }
     }
 })
-async def coords_insert(coord_x: float, coord_y: float, territorie_id: int, order: int):
+async def coords_insert(coord_x: float, coord_y: float, territorie_id: int, order: int,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: добавление координаты. На ввод подаются координаты X, Y, идентификатор территории и порядок."""
     conn = get_db_connection()
     x = insert_coord(conn, coord_x, coord_y, territorie_id, order)
@@ -139,7 +146,8 @@ async def coords_insert(coord_x: float, coord_y: float, territorie_id: int, orde
         }
     }
 })
-async def coords_update(coord_id: int, coord_x: float, coord_y: float, territorie_id: int, order: int):
+async def coords_update(coord_id: int, coord_x: float, coord_y: float, territorie_id: int, order: int,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: изменение параметров координаты. На ввод подаются идентификатор, координаты X, Y, идентификатор территории и порядок."""
     conn = get_db_connection()
     x = update_coord(conn, coord_id, coord_x, coord_y, territorie_id, order)

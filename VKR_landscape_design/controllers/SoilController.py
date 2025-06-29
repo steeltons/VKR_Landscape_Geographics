@@ -2,8 +2,13 @@ from fastapi import APIRouter, Response, HTTPException
 import json
 from models.soils_model import *
 from utils import get_db_connection
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from utils import get_db_connection
+from controllers.UserController import get_current_active_admin_user
 
 router = APIRouter()
+security = HTTPBearer()
 
 soil_example = {
     "soil_id": 1,
@@ -116,7 +121,8 @@ async def soils_get_one_soil(soil_id: int, is_need_pictures: bool = False):
         }
     }
 })
-async def soils_delete(soil_id: int):
+async def soils_delete(soil_id: int,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: удаление почвы по её ID."""
     conn = get_db_connection()
     y = get_one_soil(conn, soil_id)
@@ -168,7 +174,8 @@ async def soils_delete(soil_id: int):
         }
     }
 })
-async def soils_insert(soil_name: str, soil_description: str | None = None, soil_acidity: float | None = None, soil_minerals: str | None = None, soil_profile: str | None = None, soil_picture_id: int | None = None):
+async def soils_insert(soil_name: str, soil_description: str | None = None, soil_acidity: float | None = None, soil_minerals: str | None = None, soil_profile: str | None = None, soil_picture_id: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: добавление почвы. На ввод подаются название, описание, кислотность, минералы, профиль и идентификатор картинки."""
     conn = get_db_connection()
     if soil_name is not None and len(soil_name) == 0:
@@ -233,7 +240,8 @@ async def soils_insert(soil_name: str, soil_description: str | None = None, soil
         }
     }
 })
-async def soils_update(soil_id: int, soil_name: str | None = None, soil_description: str | None = None, soil_acidity: float | None = None, soil_minerals: str | None = None, soil_profile: str | None = None, soil_picture_id: int | None = None):
+async def soils_update(soil_id: int, soil_name: str | None = None, soil_description: str | None = None, soil_acidity: float | None = None, soil_minerals: str | None = None, soil_profile: str | None = None, soil_picture_id: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: изменение параметров почвы. На ввод подаются идентификатор, название, описание, кислотность, минералы, профиль и идентификатор картинки."""
     conn = get_db_connection()
     if soil_name is not None and len(soil_name) == 0:

@@ -2,8 +2,13 @@ from fastapi import APIRouter, Response, HTTPException
 import json
 from models.plants_model import *
 from utils import get_db_connection
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from utils import get_db_connection
+from controllers.UserController import get_current_active_admin_user
 
 router = APIRouter()
+security = HTTPBearer()
 
 plant_example = {
     "plant_id": 1,
@@ -104,7 +109,8 @@ async def plants_get_one_plant(plant_id: int, is_need_pictures: bool = False):
         }
     }
 })
-async def plants_delete(plant_id: int):
+async def plants_delete(plant_id: int,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: удаление растения по его ID."""
     conn = get_db_connection()
     y = get_one_plant(conn, plant_id)
@@ -147,7 +153,8 @@ async def plants_delete(plant_id: int):
         }
     }
 })
-async def plants_insert(plant_name: str, plant_description: str | None = None, plant_picture_id: int | None = None):
+async def plants_insert(plant_name: str, plant_description: str | None = None, plant_picture_id: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: добавление растения. На ввод подаются название, описание и идентификатор картинки."""
     conn = get_db_connection()
     if plant_name is not None and len(plant_name) == 0:
@@ -197,7 +204,8 @@ async def plants_insert(plant_name: str, plant_description: str | None = None, p
         }
     }
 })
-async def plants_update(plant_id: int, plant_name: str | None = None, plant_description: str | None = None, plant_picture_id: int | None = None):
+async def plants_update(plant_id: int, plant_name: str | None = None, plant_description: str | None = None, plant_picture_id: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: изменение параметров растения. На ввод подаются идентификатор, название, описание и идентификатор картинки."""
     conn = get_db_connection()
     if plant_name is not None and len(plant_name) == 0:

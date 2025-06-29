@@ -2,8 +2,13 @@ from fastapi import APIRouter, Response, HTTPException
 import json
 from models.grounds_model import *
 from utils import get_db_connection
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from utils import get_db_connection
+from controllers.UserController import get_current_active_admin_user
 
 router = APIRouter()
+security = HTTPBearer()
 
 ground_example = {
     "ground_id": 1,
@@ -113,7 +118,8 @@ async def grounds_get_one_ground(ground_id: int, is_need_pictures: bool = False)
         }
     }
 })
-async def grounds_delete(ground_id: int):
+async def grounds_delete(ground_id: int,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: удаление грунта по его ID."""
     conn = get_db_connection()
     y = get_one_ground(conn, ground_id)
@@ -165,7 +171,8 @@ async def grounds_delete(ground_id: int):
         }
     }
 })
-async def grounds_insert(ground_name: str, ground_description: str | None = None, ground_density: float | None = None, ground_humidity: float | None = None, ground_solidity: float | None = None, ground_picture_id: int | None = None):
+async def grounds_insert(ground_name: str, ground_description: str | None = None, ground_density: float | None = None, ground_humidity: float | None = None, ground_solidity: float | None = None, ground_picture_id: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: добавление грунта. На ввод подаются название, описание, плотность, влажность, твердость и идентификатор картинки."""
     conn = get_db_connection()
     if ground_name is not None and len(ground_name) == 0:
@@ -230,7 +237,8 @@ async def grounds_insert(ground_name: str, ground_description: str | None = None
         }
     }
 })
-async def grounds_update(ground_id: int, ground_name: str | None = None, ground_description: str | None = None, ground_density: float | None = None, ground_humidity: float | None = None, ground_solidity: float | None = None, ground_picture_id: int | None = None):
+async def grounds_update(ground_id: int, ground_name: str | None = None, ground_description: str | None = None, ground_density: float | None = None, ground_humidity: float | None = None, ground_solidity: float | None = None, ground_picture_id: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: изменение параметров грунта. На ввод подаются идентификатор, название, описание, плотность, влажность, твердость и идентификатор картинки."""
     conn = get_db_connection()
     if ground_name is not None and len(ground_name) == 0:

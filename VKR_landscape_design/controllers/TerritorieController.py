@@ -2,8 +2,13 @@ from fastapi import APIRouter, Response, HTTPException
 import json
 from models.territories_model import *
 from utils import get_db_connection
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from utils import get_db_connection
+from controllers.UserController import get_current_active_admin_user
 
 router = APIRouter()
+security = HTTPBearer()
 
 # Пример данных для ответов
 territorie_example = {
@@ -283,6 +288,53 @@ async def territories_get_coords_by_territorie_id(territorie_id: int):
         status_code=200
     )
 
+def get_all_territories(conn):
+    # Получаем все территории из базы данных
+    territories = pd.read_sql('SELECT territorie_id FROM territories', conn)
+    return territories['territorie_id'].tolist()
+
+@router.post("/territories/contains-point", tags=["TerritorieController"], responses={
+    200: {
+        "description": "Successful Response",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "Point belongs to territories": {
+                        "value": {"territorie_ids": [1, 2]}
+                    },
+                    "Point does not belong to any territory": {
+                        "value": {"message": "Точка не принадлежит ни одной территории."}
+                    }
+                }
+            }
+        }
+    }
+})
+async def check_point_in_territories(point_x: float, point_y: float):
+    """
+    Описание: Проверка принадлежности точки территориям.
+    Принимает координаты точки и возвращает идентификаторы территорий, которым принадлежит точка.
+    """
+    conn = get_db_connection()
+    territorie_ids = []
+    territories = get_all_territories(conn)
+
+    for territorie_id in territories:
+        coords_df = get_coords_by_territorie_id(conn, territorie_id)
+        if len(coords_df) == 0:
+            continue
+
+        polygon_coords = list(zip(coords_df['coords_coord_x'], coords_df['coords_coord_y']))
+        is_inside = is_point_in_polygon(point_x, point_y, polygon_coords)
+
+        if is_inside:
+            territorie_ids.append(territorie_id)
+
+    if not territorie_ids:
+        return {"message": "Точка не принадлежит ни одной территории."}
+    else:
+        return {"territorie_ids": territorie_ids}
+
 @router.post("/territories/{territorie_id}/contains-point", tags=["TerritorieController"], responses={
     200: {
         "description": "Point is inside the territory",
@@ -313,12 +365,10 @@ async def territories_contains_point(territorie_id: int, point_x: float, point_y
     """Описание: проверка, находится ли точка внутри территории."""
     conn = get_db_connection()
     coords_df = get_coords_by_territorie_id(conn, territorie_id)
-
     if len(coords_df) == 0:
         raise HTTPException(status_code=404, detail="Ошибка: координаты для данной территории не найдены.")
 
     polygon_coords = list(zip(coords_df['coords_coord_x'], coords_df['coords_coord_y']))
-
     is_inside = is_point_in_polygon(point_x, point_y, polygon_coords)
 
     return Response(
@@ -344,7 +394,8 @@ async def territories_contains_point(territorie_id: int, point_x: float, point_y
         }
     }
 })
-async def territories_delete(territorie_id: int):
+async def territories_delete(territorie_id: int,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: удаление территории по её ID."""
     conn = get_db_connection()
     y = get_one_territorie(conn, territorie_id)
@@ -363,7 +414,8 @@ async def territories_delete(territorie_id: int):
         }
     }
 })
-async def territories_insert(territorie_landscape_id: int | None = None, territorie_description: str | None = None):
+async def territories_insert(territorie_landscape_id: int | None = None, territorie_description: str | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: добавление территории. На ввод подаются идентификатор ландшафта и описание."""
     conn = get_db_connection()
     x = insert_territorie(conn, territorie_landscape_id, territorie_description)
@@ -379,8 +431,76 @@ async def territories_insert(territorie_landscape_id: int | None = None, territo
         }
     }
 })
-async def territories_update(territorie_id: int, territorie_landscape_id: int | None = None, territorie_description: str | None = None):
+async def territories_update(territorie_id: int, territorie_landscape_id: int | None = None, territorie_description: str | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: изменение параметров территории. На ввод подаются идентификатор, идентификатор ландшафта и описание."""
     conn = get_db_connection()
     x = update_territorie(conn, territorie_id, territorie_landscape_id, territorie_description)
     return Response("{'message':'Территория обновлена.'}", status_code=200)
+
+
+
+@router.post("/territories/point-related-objects", tags=["TerritorieController"], responses={
+    200: {
+        "description": "Successful Response",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "Example response": {
+                        "value": {
+                            "territories": [
+                                {
+                                    "territorie": territorie_example,
+                                    "landscape": territorie_with_related_objects_example["landscape"],
+                                    "soils": territorie_with_related_objects_example["soils"],
+                                    "grounds": territorie_with_related_objects_example["grounds"],
+                                    "plants": territorie_with_related_objects_example["plants"],
+                                    "reliefs": territorie_with_related_objects_example["reliefs"],
+                                    "foundations": territorie_with_related_objects_example["foundations"],
+                                    "waters": territorie_with_related_objects_example["waters"],
+                                    "climats": territorie_with_related_objects_example["climats"]
+                                }
+                            ]
+                        }
+                    },
+                    "Point does not belong to any territory": {
+                        "value": {"message": "Точка не принадлежит ни одной территории."}
+                    }
+                }
+            }
+        }
+    }
+})
+async def get_related_objects_for_point(point_x: float, point_y: float, is_need_pictures: bool = False):
+    """
+    Описание: Получение всех связанных объектов для территорий, которым принадлежит точка.
+    Принимает координаты точки и флаг is_need_pictures.
+    """
+    conn = get_db_connection()
+    territorie_ids = []
+    territories = get_all_territories(conn)
+
+    for territorie_id in territories:
+        coords_df = get_coords_by_territorie_id(conn, territorie_id)
+        if len(coords_df) == 0:
+            continue
+
+        polygon_coords = list(zip(coords_df['coords_coord_x'], coords_df['coords_coord_y']))
+        is_inside = is_point_in_polygon(point_x, point_y, polygon_coords)
+
+        if is_inside:
+            territorie_ids.append(territorie_id)
+
+    if not territorie_ids:
+        return {"message": "Точка не принадлежит ни одной территории."}
+
+    result = []
+    for territorie_id in territorie_ids:
+        territorie_data = get_territorie_with_related_objects(conn, territorie_id, is_need_pictures)
+        if territorie_data:
+            result.append(territorie_data)
+
+    return Response(
+        json.dumps({"territories": result}, indent=2, ensure_ascii=False),
+        status_code=200
+    )
