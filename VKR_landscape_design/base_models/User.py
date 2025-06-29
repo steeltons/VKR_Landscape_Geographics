@@ -9,9 +9,13 @@ class UserInBD(BaseModel):
     user_name: Optional[str] = None
     user_fathername: Optional[str] = None
     user_age: Optional[int] = None
-    user_isFemale: Optional[int] = None
-    user_picture: Optional[str] = None
-    user_isAdmin: int
+    user_is_female: Optional[int] = None
+    user_is_admin: Optional[int] = None
+    user_picture: Optional[int] = None
+
+class UserPicture(BaseModel):
+    user_id: int
+    user_picture_id: int
 
 class UserRegister(BaseModel):
     user_login: str
@@ -22,6 +26,3 @@ class UserAuthorization(BaseModel):
     user_login: str
     user_password: str
 
-class UserPicture(BaseModel):
-    user_id: int
-    user_picture: str

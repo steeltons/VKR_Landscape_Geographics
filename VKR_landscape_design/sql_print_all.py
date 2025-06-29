@@ -8,9 +8,9 @@ from models.soils_model import *
 from models.territories_model import *
 from models.users_model import *
 from models.connection_territories_soils_model import *
-from models.connection_soils_grounds_model import *
-from models.connection_soils_plants_model import *
-from models.connection_plants_animals_model import *
+from models.connection_landscapes_foundations_model import *
+from models.connection_landscapes_grounds_model import *
+from models.connection_landscapes_climats_model import *
 pd.options.display.max_rows = 100
 pd.options.display.max_columns = 100
 
@@ -27,23 +27,9 @@ cursor.execute("SELECT * FROM territories")
 print(cursor.fetchall())
 cursor.execute("SELECT * FROM soils")
 print(cursor.fetchall())
-cursor.execute("SELECT * FROM animals")
-print(cursor.fetchall())
 cursor.execute("SELECT * FROM plants")
 print(cursor.fetchall())
 cursor.execute("SELECT * FROM grounds")
-print(cursor.fetchall())
-cursor.execute("SELECT * FROM connection_territories_soils")
-print(cursor.fetchall())
-cursor.execute("SELECT * FROM connection_soils_grounds")
-print(cursor.fetchall())
-cursor.execute("SELECT * FROM connection_soils_plants")
-print(cursor.fetchall())
-cursor.execute("SELECT * FROM connection_plants_animals")
-print(cursor.fetchall())
-
-
-cursor.execute("SELECT * FROM connection_plants_animals")
 print(cursor.fetchall())
 
 print()

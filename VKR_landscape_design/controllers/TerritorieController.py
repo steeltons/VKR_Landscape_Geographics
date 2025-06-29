@@ -1,237 +1,386 @@
-from pydantic import BaseModel
-from typing import Optional
 from fastapi import APIRouter, Response, HTTPException
 import json
-import simplejson as sj
-from base_models import Territorie
 from models.territories_model import *
 from utils import get_db_connection
-import math
+
 router = APIRouter()
 
+# Пример данных для ответов
+territorie_example = {
+    "territorie_id": 1,
+    "territorie_landscape_id": 1,
+    "territorie_description": "Описание территории"
+}
 
-@router.get("/territories/all", tags=["TerritorieController"])
+territorie_with_related_objects_example = {
+    "territorie": {
+        "territorie_id": 1,
+        "territorie_landscape_id": 1,
+        "territorie_description": "Описание территории"
+    },
+    "landscape": {
+        "landscape_id": 1,
+        "landscape_name": "Ландшафт",
+        "landscape_code": "LAND",
+        "landscape_description": "Описание ландшафта",
+        "landscape_area_in_square_kilometers": 100.0,
+        "landscape_area_in_percents": 10.0,
+        "landscape_KR": 0.5,
+        "landscape_picture_id": 1,
+        "landscape_picture_base64": "base64_encoded_string_for_landscape"
+    },
+    "soils": [
+        {
+            "soil_id": 1,
+            "soil_name": "Почва",
+            "soil_description": "Описание почвы",
+            "soil_acidity": 7.0,
+            "soil_minerals": "Минералы",
+            "soil_profile": "Профиль",
+            "soil_picture_id": 1,
+            "soil_picture_base64": "base64_encoded_string_for_soil"
+        }
+    ],
+    "grounds": [
+        {
+            "ground_id": 1,
+            "ground_name": "Грунт",
+            "ground_description": "Описание грунта",
+            "ground_density": 1.5,
+            "ground_humidity": 0.5,
+            "ground_solidity": 0.8,
+            "ground_picture_id": 1,
+            "ground_picture_base64": "base64_encoded_string_for_ground"
+        }
+    ],
+    "plants": [
+        {
+            "plant_id": 1,
+            "plant_name": "Растение",
+            "plant_description": "Описание растения",
+            "plant_picture_id": 1,
+            "plant_picture_base64": "base64_encoded_string_for_plant"
+        }
+    ],
+    "reliefs": [
+        {
+            "relief_id": 1,
+            "relief_name": "Рельеф",
+            "relief_description": "Описание рельефа",
+            "relief_picture_id": 1,
+            "relief_picture_base64": "base64_encoded_string_for_relief"
+        }
+    ],
+    "foundations": [
+        {
+            "foundation_id": 1,
+            "foundation_name": "Фундамент",
+            "foundation_description": "Описание фундамента",
+            "foundation_depth_roof_root_in_meters": 2.0,
+            "foundation_picture_id": 1,
+            "foundation_picture_base64": "base64_encoded_string_for_foundation"
+        }
+    ],
+    "waters": [
+        {
+            "water_id": 1,
+            "water_name": "Вода",
+            "water_description": "Описание воды",
+            "water_picture_id": 1,
+            "water_picture_base64": "base64_encoded_string_for_water"
+        }
+    ],
+    "climats": [
+        {
+            "climat_id": 1,
+            "climat_name": "Климат",
+            "climat_description": "Описание климата",
+            "climat_picture_id": 1,
+            "climat_picture_base64": "base64_encoded_string_for_climat"
+        }
+    ]
+}
+
+territorie_list_example = [
+    {
+        "territorie_id": 1,
+        "territorie_landscape_id": 1,
+        "territorie_description": "Описание территории 1"
+    },
+    {
+        "territorie_id": 2,
+        "territorie_landscape_id": 2,
+        "territorie_description": "Описание территории 2"
+    }
+]
+
+coord_example = {
+    "coord_id": 1,
+    "coords_coord_x": 10.5,
+    "coords_coord_y": 20.5,
+    "coords_order": 1
+}
+
+coord_list_example = [
+    {
+        "coord_id": 1,
+        "coords_coord_x": 10.5,
+        "coords_coord_y": 20.5,
+        "coords_order": 1
+    },
+    {
+        "coord_id": 2,
+        "coords_coord_x": 30.5,
+        "coords_coord_y": 40.5,
+        "coords_order": 2
+    }
+]
+
+@router.get("/territories/all", tags=["TerritorieController"], responses={
+    200: {
+        "description": "Successful Response",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "Example response": {
+                        "value": territorie_list_example
+                    }
+                }
+            }
+        }
+    }
+})
 async def territories_get_select_all():
-    """
-      Описание: получение данных обо всех территориях.
-    """
+    """Описание: получение данных обо всех территориях."""
     conn = get_db_connection()
     x = get_territories(conn)
-    return Response(json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False), status_code=200)
+    return Response(
+        json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace("NaN", "null"),
+        status_code=200
+    )
 
-@router.get("/territories/one", tags=["TerritorieController"])
+@router.get("/territories/{territorie_id}/related-objects", tags=["TerritorieController"], responses={
+    200: {
+        "description": "Successful Response",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "Example response": {
+                        "value": territorie_with_related_objects_example
+                    }
+                }
+            }
+        }
+    },
+    404: {
+        "description": "Territorie or related objects not found",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: территория или связанные объекты не найдены."}
+            }
+        }
+    }
+})
+async def territories_get_related_objects(territorie_id: int, is_need_pictures: bool = False):
+    """Описание: получение всех связанных объектов с территорией."""
+    conn = get_db_connection()
+    result = get_territorie_with_related_objects(conn, territorie_id, is_need_pictures)
+
+    if result is None:
+        raise HTTPException(status_code=404, detail="Ошибка: территория или связанные объекты не найдены.")
+
+    return Response(
+        json.dumps(result, indent=2, ensure_ascii=False),
+        status_code=200
+    )
+
+@router.get("/territories/one", tags=["TerritorieController"], responses={
+    200: {
+        "description": "Successful Response",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "Example response": {
+                        "value": territorie_example
+                    }
+                }
+            }
+        }
+    },
+    404: {
+        "description": "Territorie not found",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: территория с данным ID не найдена."}
+            }
+        }
+    }
+})
+
+@router.get("/territories/one", tags=["TerritorieController"], responses={
+    200: {
+        "description": "Successful Response",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "Example response": {
+                        "value": territorie_example
+                    }
+                }
+            }
+        }
+    },
+    404: {
+        "description": "Territorie not found",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: территория с данным ID не найдена."}
+            }
+        }
+    }
+})
 async def territories_get_one_territorie(territorie_id: int):
-    """
-      Описание: получение данных об одной территории по её ID.
-    """
+    """Описание: получение данных об одной территории по её идентификатору."""
     conn = get_db_connection()
     x = get_one_territorie(conn, territorie_id)
     if len(x) == 0:
         raise HTTPException(status_code=404, detail="Ошибка: территория с данным ID не найдена.")
-    return Response(json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False), status_code=200)
+    return Response(
+        json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace("NaN", "null"),
+        status_code=200
+    )
 
-@router.get("/territories/bycoord", tags=["TerritorieController"])
-async def territories_bycoord(territorie_coord_x: float, territorie_coord_y: float):
-    """
-      Описание: получение ближайшей точки по указанным координатам.
-    """
+@router.get("/territories/{territorie_id}/coords", tags=["TerritorieController"], responses={
+    200: {
+        "description": "Successful Response",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "Example response": {
+                        "value": coord_list_example
+                    }
+                }
+            }
+        }
+    },
+    404: {
+        "description": "No coordinates found",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: координаты для данной территории не найдены."}
+            }
+        }
+    }
+})
+async def territories_get_coords_by_territorie_id(territorie_id: int):
+    """Описание: получение всех координат, связанных с определенной территорией."""
     conn = get_db_connection()
-    conn.create_function('sqrt', 1, math.sqrt)
-    x = bycoord(conn, territorie_coord_x, territorie_coord_y)
+    x = get_coords_by_territorie_id(conn, territorie_id)
     if len(x) == 0:
-        raise HTTPException(status_code=404, detail="Ошибка: рядом с указанными координатами нет никаких точек, находящихся в базе данных.")
-    return Response(json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False), status_code=200)
+        raise HTTPException(status_code=404, detail="Ошибка: координаты для данной территории не найдены.")
+    return Response(
+        json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace("NaN", "null"),
+        status_code=200
+    )
 
-@router.get("/territories/byterritoriesoils", tags=["TerritorieController"])
-async def territories_byterritorie_soils(user_territorie_id: int):
-    """
-      Описание: получение данных о присутствующих в данной точке почвах. На ввод подаются координата x (широта) и координата y (долгота).
-      Выводится ближайшая точка, в которой есть почвы, если она есть, или ошибка в противном случае.
-    """
+@router.post("/territories/{territorie_id}/contains-point", tags=["TerritorieController"], responses={
+    200: {
+        "description": "Point is inside the territory",
+        "content": {
+            "application/json": {
+                "example": {"is_inside": True}
+            }
+        }
+    },
+    400: {
+        "description": "Invalid input data",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: координаты точки не предоставлены."}
+            }
+        }
+    },
+    404: {
+        "description": "No coordinates found",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: координаты для данной территории не найдены."}
+            }
+        }
+    }
+})
+async def territories_contains_point(territorie_id: int, point_x: float, point_y: float):
+    """Описание: проверка, находится ли точка внутри территории."""
     conn = get_db_connection()
-    y = get_one_territorie(conn, user_territorie_id)
-    if len(y) == 0:
-        raise HTTPException(status_code=404, detail="Ошибка: такой точки нет в базе данных, поэтому получить перечень присутствующих в ней почв невозможно.")
-    x = byterritorie_soils(conn, user_territorie_id)
-    return Response((json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace(": NaN", ": null")).replace(".0,", ","), status_code=200)
+    coords_df = get_coords_by_territorie_id(conn, territorie_id)
 
-@router.get("/territories/byterritoriesoilsnoused", tags=["TerritorieController"])
-async def territories_byterritorie_soils_noused(user_territorie_id: int):
-    """
-      Описание: получение данных об отсутствующих в данной точке почвах.
-    """
-    conn = get_db_connection()
-    y = get_one_territorie(conn, user_territorie_id)
-    if len(y) == 0:
-        raise HTTPException(status_code=404, detail="Ошибка: такой точки нет в базе данных, поэтому получить перечень отсутствующих в ней почв невозможно.")
-    x = byterritorie_soils_noused(conn, user_territorie_id)
-    return Response((json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace(": NaN", ": null")).replace(".0,", ","), status_code=200)
+    if len(coords_df) == 0:
+        raise HTTPException(status_code=404, detail="Ошибка: координаты для данной территории не найдены.")
 
-@router.get("/territories/byterritorieground", tags=["TerritorieController"])
-async def territories_byterritorie_ground(user_territorie_id: int):
-    """
-      Описание: получение данных о присутствующих в данной точке грунтах.
-    """
-    conn = get_db_connection()
-    y = get_one_territorie(conn, user_territorie_id)
-    if len(y) == 0:
-        raise HTTPException(status_code=404, detail="Ошибка: такой точки нет в базе данных, поэтому получить перечень присутствующих в ней грунтов невозможно.")
-    x = byterritorie_ground(conn, user_territorie_id)
-    return Response((json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace(": NaN", ": null")).replace(".0,", ","), status_code=200)
+    polygon_coords = list(zip(coords_df['coords_coord_x'], coords_df['coords_coord_y']))
 
-@router.get("/territories/byterritorieanimal", tags=["TerritorieController"])
-async def territories_byterritorie_animal(user_territorie_id: int):
-    """
-      Описание: получение данных о присутствующих в данной точке животных.
-    """
-    conn = get_db_connection()
-    y = get_one_territorie(conn, user_territorie_id)
-    if len(y) == 0:
-        raise HTTPException(status_code=404, detail="Ошибка: такой точки нет в базе данных, поэтому получить информацию о присутствующих в ней животных невозможно.")
-    x = byterritorie_animal(conn, user_territorie_id)
-    return Response((json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace(": NaN", ": null")).replace(".0,", ","), status_code=200)
+    is_inside = is_point_in_polygon(point_x, point_y, polygon_coords)
 
-@router.get("/territories/byterritorieplant", tags=["TerritorieController"])
-async def territories_byterritorie_plant(user_territorie_id: int):
-    """
-      Описание: получение данных о присутствующих в данной точке растениях.
-    """
-    conn = get_db_connection()
-    y = get_one_territorie(conn, user_territorie_id)
-    if len(y) == 0:
-        raise HTTPException(status_code=404, detail="Ошибка: такой точки нет в базе данных, поэтому получить информацию о присутствующих в ней растениях невозможно.")
-    x = byterritorie_plant(conn, user_territorie_id)
-    return Response((json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace(": NaN", ": null")).replace(".0,", ","), status_code=200)
+    return Response(
+        json.dumps({"is_inside": is_inside}, indent=2),
+        status_code=200
+    )
 
-@router.get("/territories/byterritoriefoundations", tags=["TerritorieController"])
-async def territories_byterritorie_foundations(user_territorie_id: int):
-    """
-      Описание: получение данных о присутствующих в данной точке фундаментах.
-    """
-    conn = get_db_connection()
-    y = get_one_territorie(conn, user_territorie_id)
-    if len(y) == 0:
-        raise HTTPException(status_code=404, detail="Ошибка: такой точки нет в базе данных, поэтому получить перечень присутствующих в ней фундаментов невозможно.")
-    x = byterritorie_foundations(conn, user_territorie_id)
-    return Response((json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace(": NaN", ": null")).replace(".0,", ","), status_code=200)
-
-@router.get("/territories/byterritoriereliefs", tags=["TerritorieController"])
-async def territories_byterritorie_reliefs(user_territorie_id: int):
-    """
-      Описание: получение данных о присутствующих в данной точке рельефах.
-    """
-    conn = get_db_connection()
-    y = get_one_territorie(conn, user_territorie_id)
-    if len(y) == 0:
-        raise HTTPException(status_code=404, detail="Ошибка: такой точки нет в базе данных, поэтому получить перечень присутствующих в ней рельефов невозможно.")
-    x = byterritorie_reliefs(conn, user_territorie_id)
-    return Response((json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace(": NaN", ": null")).replace(".0,", ","), status_code=200)
-
-@router.get("/territories/byterritorielandscapes", tags=["TerritorieController"])
-async def territories_byterritorie_landscapes(user_territorie_id: int):
-    """
-      Описание: получение данных о присутствующих в данной точке ландшафтах.
-    """
-    conn = get_db_connection()
-    y = get_one_territorie(conn, user_territorie_id)
-    if len(y) == 0:
-        raise HTTPException(status_code=404, detail="Ошибка: такой точки нет в базе данных, поэтому получить перечень присутствующих в ней ландшафтов невозможно.")
-    x = byterritorie_landscapes(conn, user_territorie_id)
-    return Response((json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace(": NaN", ": null")).replace(".0,", ","), status_code=200)
-
-@router.get("/territories/byterritorieclimats", tags=["TerritorieController"])
-async def territories_byterritorie_climats(user_territorie_id: int):
-    """
-      Описание: получение данных о присутствующих в данной точке климатах.
-    """
-    conn = get_db_connection()
-    y = get_one_territorie(conn, user_territorie_id)
-    if len(y) == 0:
-        raise HTTPException(status_code=404, detail="Ошибка: такой точки нет в базе данных, поэтому получить перечень присутствующих в ней климатов невозможно.")
-    x = byterritorie_climats(conn, user_territorie_id)
-    return Response((json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace(": NaN", ": null")).replace(".0,", ","), status_code=200)
-
-@router.get("/territories/byterritoriewaters", tags=["TerritorieController"])
-async def territories_byterritorie_waters(user_territorie_id: int):
-    """
-      Описание: получение данных о присутствующих в данной точке водах.
-    """
-    conn = get_db_connection()
-    y = get_one_territorie(conn, user_territorie_id)
-    if len(y) == 0:
-        raise HTTPException(status_code=404, detail="Ошибка: такой точки нет в базе данных, поэтому получить перечень присутствующих в ней вод невозможно.")
-    x = byterritorie_waters(conn, user_territorie_id)
-    return Response((json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace(": NaN", ": null")).replace(".0,", ","), status_code=200)
-
-@router.post("/territories/insert", tags=["TerritorieController"])
-async def territories_post_insert(territorie_coord_x: float, territorie_coord_y: float, territorie_address: str):
-    """
-      Описание: добавление территории. На ввод подаются координата x (широта), координата y (долгота) и адрес.
-      Ограничения: 1) координата x (широта) точки должна принадлежать интервалу [-90; 90];
-                   2) координата y (долгота) точки должна принадлежать полуинтервалу (-180; 180];
-                   3) адрес территории должен иметь длину не более 500 символов и не быть пустым.
-    """
-    conn = get_db_connection()
-    if ((len(territorie_address) == 0)):
-        raise HTTPException(status_code=400, detail="Ошибка: адрес территории не должен быть пустым.")
-    if ((territorie_coord_x < -90) or (territorie_coord_x > 90)):
-        raise HTTPException(status_code=400, detail="Ошибка: координата x (широта) точки должна принадлежать интервалу [-90; 90].")
-    if ((territorie_coord_y <= -180) or (territorie_coord_y > 180)):
-        raise HTTPException(status_code=400, detail="Ошибка: координата y (долгота) точки должна принадлежать полуинтервалу (-180; 180].")
-    if (len(territorie_address) > 500):
-        raise HTTPException(status_code=400, detail="Ошибка: адрес территории должен быть не длинее 500 символов.")
-    x = insert_territorie(conn, territorie_coord_x, territorie_coord_y, territorie_address)
-    return Response("{'messinsert':'Территория создана.'}", status_code=200)
-
-@router.post("/territories/delete", tags=["TerritorieController"])
-async def territories_post_delete(territorie_id: int):
-    """
-      Описание: удаление территории по её ID.
-    """
+@router.delete("/territories/delete", tags=["TerritorieController"], responses={
+    200: {
+        "description": "Territorie deleted successfully",
+        "content": {
+            "application/json": {
+                "example": {"message": "Территория удалена."}
+            }
+        }
+    },
+    404: {
+        "description": "Territorie not found",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: территория с данным ID не найдена, потому удалить её невозможно."}
+            }
+        }
+    }
+})
+async def territories_delete(territorie_id: int):
+    """Описание: удаление территории по её ID."""
     conn = get_db_connection()
     y = get_one_territorie(conn, territorie_id)
     if len(y) == 0:
-        raise HTTPException(status_code=404, detail="Ошибка: территория с данным ID не найдена, потому удалить его невозможно.")
+        raise HTTPException(status_code=404, detail="Ошибка: территория с данным ID не найдена, потому удалить её невозможно.")
     x = delete_territorie(conn, territorie_id)
-    return Response("{'messdelete':'Территория удалена.'}", status_code=200)
+    return Response("{'message':'Территория удалена.'}", status_code=200)
 
-@router.post("/territories/update/coord_x", tags=["TerritorieController"])
-async def territories_post_update_coord_x(territorie_id: int, territorie_coord_x: float):
-    """
-      Описание: изменение координаты x территории.
-      Ограничения: координата x (широта) точки должна принадлежать интервалу [-90; 90].
-    """
+@router.post("/territories/insert", tags=["TerritorieController"], responses={
+    200: {
+        "description": "Territorie created successfully",
+        "content": {
+            "application/json": {
+                "example": {"message": "Территория создана."}
+            }
+        }
+    }
+})
+async def territories_insert(territorie_landscape_id: int | None = None, territorie_description: str | None = None):
+    """Описание: добавление территории. На ввод подаются идентификатор ландшафта и описание."""
     conn = get_db_connection()
-    if ((territorie_coord_x < -90) or (territorie_coord_x > 90)):
-        raise HTTPException(status_code=400, detail="Ошибка: координата x (широта) точки должна принадлежать интервалу [-90; 90].")
-    x = update_territorie_coord_x(conn, territorie_id, territorie_coord_x)
-    return Response("{'messcoordx':'Координата x (широта) территории обновлена.'}", status_code=200)
+    x = insert_territorie(conn, territorie_landscape_id, territorie_description)
+    return Response("{'message':'Территория создана.'}", status_code=200)
 
-@router.post("/territories/update/coord_y", tags=["TerritorieController"])
-async def territories_post_update_coord_y(territorie_id: int, territorie_coord_y: float):
-    """
-      Описание: изменение координаты y территории.
-      Ограничения: координата y (долгота) точки должна принадлежать полуинтервалу (-180; 180].
-    """
+@router.patch("/territories/update", tags=["TerritorieController"], responses={
+    200: {
+        "description": "Territorie updated successfully",
+        "content": {
+            "application/json": {
+                "example": {"message": "Территория обновлена."}
+            }
+        }
+    }
+})
+async def territories_update(territorie_id: int, territorie_landscape_id: int | None = None, territorie_description: str | None = None):
+    """Описание: изменение параметров территории. На ввод подаются идентификатор, идентификатор ландшафта и описание."""
     conn = get_db_connection()
-    if ((territorie_coord_y <= -180) or (territorie_coord_y > 180)):
-        raise HTTPException(status_code=400, detail="Ошибка: координата y (долгота) точки должна принадлежать полуинтервалу (-180; 180].")
-    x = update_territorie_coord_y(conn, territorie_id, territorie_coord_y)
-    return Response("{'messcoordy':'Координата y (долгота) территории обновлена.'}", status_code=200)
-
-
-@router.post("/territories/update/address", tags=["TerritorieController"])
-async def territories_post_update_address(territorie_id: int, territorie_address: str):
-    """
-      Описание: изменение адреса территории.
-      Ограничения: адрес территории должен иметь длину не более 500 символов и не быть пустым.
-    """
-    conn = get_db_connection()
-    if ((len(territorie_address) == 0)):
-        raise HTTPException(status_code=400, detail="Ошибка: адрес территории не должен быть пустым.")
-    if (len(territorie_address) > 500):
-        raise HTTPException(status_code=400, detail="Ошибка: адрес территории должен иметь длину не более 500 символов.")
-    x = update_territorie_address(conn, territorie_id, territorie_address)
-    return Response("{'messaddress':'Адрес территории обновлён.'}", status_code=200)
-
-
+    x = update_territorie(conn, territorie_id, territorie_landscape_id, territorie_description)
+    return Response("{'message':'Территория обновлена.'}", status_code=200)

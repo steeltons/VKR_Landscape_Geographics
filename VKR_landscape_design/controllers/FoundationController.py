@@ -1,117 +1,228 @@
-from pydantic import BaseModel
-from typing import Optional
 from fastapi import APIRouter, Response, HTTPException
 import json
-from base_models import Foundation
 from models.foundations_model import *
 from utils import get_db_connection
+
 router = APIRouter()
 
+foundation_example = {
+    "foundation_id": 1,
+    "foundation_name": "Фундамент",
+    "foundation_description": "Описание фундамента",
+    "foundation_depth_roof_root_in_meters": 2.0,
+    "foundation_picture_id": 1,
+    "foundation_picture_base64": "base64_encoded_string_for_foundation"
+}
 
 
-@router.get("/foundations/all", tags=["FoundationController"])
-async def foundations_get_select_all():
-    """
-      Описание: получение данных обо всех фундаментах.
-    """
+foundation_list_example = [
+    {
+        "foundation_id": 1,
+        "foundation_name": "Фундамент",
+        "foundation_description": "Описание фундамента",
+        "foundation_depth_roof_root_in_meters": 2.0,
+        "foundation_picture_id": 1,
+        "foundation_picture_base64": "base64_encoded_string_for_foundation"
+    },
+    {
+        "foundation_id": 2,
+        "foundation_name": "Фундамент",
+        "foundation_description": "Описание фундамента",
+        "foundation_depth_roof_root_in_meters": 2.0,
+        "foundation_picture_id": 1,
+        "foundation_picture_base64": "base64_encoded_string_for_foundation"
+    }
+]
+
+@router.get("/foundations/all", tags=["FoundationController"], responses={
+    200: {
+        "description": "Successful Response",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "Example response with pictures": {
+                        "value": foundation_list_example
+                    }
+                }
+            }
+        }
+    }
+})
+async def foundations_get_select_all(is_need_pictures: bool = False):
+    """Описание: получение данных обо всех фундаментах."""
     conn = get_db_connection()
-    x = get_foundations(conn)
-    return Response(json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace("NaN", "null"), status_code=200)
+    x = get_foundations(conn, is_need_pictures)
+    return Response(
+        json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace("NaN", "null"),
+        status_code=200
+    )
 
-@router.get("/foundations/one", tags=["FoundationController"])
-async def foundations_get_one_foundation(foundation_id: int):
-    """
-      Описание: получение данных об одном фундаменте по его ID (кроме картинки).
-    """
+@router.get("/foundations/one", tags=["FoundationController"], responses={
+    200: {
+        "description": "Successful Response",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "Example response with picture": {
+                        "value": foundation_example
+                    }
+                }
+            }
+        }
+    },
+    404: {
+        "description": "Foundation not found",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: фундамент с данным ID не найден."}
+            }
+        }
+    }
+})
+async def foundations_get_one_foundation(foundation_id: int, is_need_pictures: bool = False):
+    """Описание: получение данных об одном фундаменте по его идентификатору."""
     conn = get_db_connection()
-    x = get_one_foundation(conn, foundation_id)
+    x = get_one_foundation(conn, foundation_id, is_need_pictures)
     if len(x) == 0:
-        raise HTTPException(status_code=404, detail="Ошибка: фундамент с данным ID не найдено.")
-    return Response(json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False), status_code=200)
+        raise HTTPException(status_code=404, detail="Ошибка: фундамент с данным ID не найден.")
+    return Response(
+        json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace("NaN", "null"),
+        status_code=200
+    )
 
-@router.post("/foundations/delete", tags=["FoundationController"])
-async def foundations_post_delete(foundation_id: int):
-    """
-      Описание: удаление фундамента по его ID.
-    """
+@router.delete("/foundations/delete", tags=["FoundationController"], responses={
+    200: {
+        "description": "Foundation deleted successfully",
+        "content": {
+            "application/json": {
+                "example": {"message": "Фундамент удалён."}
+            }
+        }
+    },
+    404: {
+        "description": "Foundation not found",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: фундамент с данным ID не найден, потому удалить его невозможно."}
+            }
+        }
+    }
+})
+async def foundations_delete(foundation_id: int):
+    """Описание: удаление фундамента по его ID."""
     conn = get_db_connection()
     y = get_one_foundation(conn, foundation_id)
     if len(y) == 0:
-        raise HTTPException(status_code=404, detail="Ошибка: фундамент с данным ID не найдено, потому удалить его невозможно.")
+        raise HTTPException(status_code=404, detail="Ошибка: фундамент с данным ID не найден, потому удалить его невозможно.")
     x = delete_foundation(conn, foundation_id)
-    return Response("{'messdelete':'Фундамент удалёно.'}", status_code=200)
+    return Response("{'message':'Фундамент удалён.'}", status_code=200)
 
-@router.post("/foundations/insert", tags=["FoundationController"])
-async def foundations_post_insert(foundation_name: str, foundation_description: str):
-    """
-      Описание: добавление фундамента. На ввод подаются название и описание.
-      Ограничения: 1) длина названия фундамента должна быть <= 30 символов, и название не должно быть пустым;
-                   2) длина описания фундамента должна быть <= 3000 символов, и описание не должно быть пустым;
-                   3) название фундамента должно быть уникальным (повторы не допускаются).
-    """
+@router.post("/foundations/insert", tags=["FoundationController"], responses={
+    200: {
+        "description": "Foundation created successfully",
+        "content": {
+            "application/json": {
+                "example": {"message": "Фундамент создан."}
+            }
+        }
+    },
+    400: {
+        "description": "Invalid input data",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "Empty name": {
+                        "value": {"detail": "Ошибка: название фундамента не должно быть пустым."}
+                    },
+                    "Name too long": {
+                        "value": {"detail": "Ошибка: длина названия должна быть меньше или равна 30 символов."}
+                    },
+                    "Description too long": {
+                        "value": {"detail": "Ошибка: длина описания должна быть меньше или равна 3000 символов."}
+                    },
+                    "Invalid depth": {
+                        "value": {"detail": "Ошибка: глубина кровли коренного фундамента должна быть больше 0."}
+                    },
+                    "Invalid picture ID": {
+                        "value": {"detail": "Ошибка: идентификатор картинки должен быть больше 0."}
+                    },
+                    "Duplicate name": {
+                        "value": {"detail": "Ошибка: название должно быть уникальным (повторы не допускаются)."}
+                    }
+                }
+            }
+        }
+    }
+})
+async def foundations_insert(foundation_name: str, foundation_description: str | None = None, foundation_depth_roof_root_in_meters: float | None = None, foundation_picture_id: int | None = None):
+    """Описание: добавление фундамента. На ввод подаются название, описание, глубина кровли коренного фундамента и идентификатор картинки."""
     conn = get_db_connection()
-    if ((len(foundation_name) == 0)):
+    if foundation_name is not None and len(foundation_name) == 0:
         raise HTTPException(status_code=400, detail="Ошибка: название фундамента не должно быть пустым.")
-    if ((len(foundation_description) == 0)):
-        raise HTTPException(status_code=400, detail="Ошибка: описание фундамента не должно быть пустым.")
-    if ((len(foundation_name) > 30)):
-        raise HTTPException(status_code=400, detail="Ошибка: название фундамента должно иметь длину не более 30 символов.")
-    if ((len(foundation_description) > 3000)):
-        raise HTTPException(status_code=400, detail="Ошибка: описание фундамента должно иметь длину не более 3000 символов.")
-    y = find_foundation_name(conn, foundation_name)
-    if len(y) != 0:
-        raise HTTPException(status_code=400, detail="Ошибка: в базе данных уже есть фундамент с таким названием.")
-    x = insert_foundation(conn, foundation_name, foundation_description)
-    return Response("{'messinsert':'Фундамент создано.'}", status_code=200)
+    if foundation_name is not None and len(foundation_name) > 30:
+        raise HTTPException(status_code=400, detail="Ошибка: длина названия должна быть меньше или равна 30 символов.")
+    if foundation_description is not None and len(foundation_description) > 3000:
+        raise HTTPException(status_code=400, detail="Ошибка: длина описания должна быть меньше или равна 3000 символов.")
+    if foundation_depth_roof_root_in_meters is not None and foundation_depth_roof_root_in_meters < 0:
+        raise HTTPException(status_code=400, detail="Ошибка: глубина кровли коренного фундамента должна быть больше 0.")
+    if foundation_picture_id is not None and foundation_picture_id < 0:
+        raise HTTPException(status_code=400, detail="Ошибка: идентификатор картинки должен быть больше 0.")
+    if len(find_foundation_name(conn, foundation_name)) != 0:
+        raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
+    x = insert_foundation(conn, foundation_name, foundation_description, foundation_depth_roof_root_in_meters, foundation_picture_id)
+    return Response("{'message':'Фундамент создан.'}", status_code=200)
 
-@router.post("/foundations/update/name", tags=["FoundationController"])
-async def foundations_post_update_name(foundation_id: int, foundation_name: str):
-    """
-      Описание: изменение названия фундамента.
-      Ограничения: длина названия фундамента должна быть <= 30 символов, и название не должно быть пустым.
-    """
+@router.patch("/foundations/update", tags=["FoundationController"], responses={
+    200: {
+        "description": "Foundation updated successfully",
+        "content": {
+            "application/json": {
+                "example": {"message": "Фундамент обновлён."}
+            }
+        }
+    },
+    400: {
+        "description": "Invalid input data",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "Empty name": {
+                        "value": {"detail": "Ошибка: название фундамента не должно быть пустым."}
+                    },
+                    "Name too long": {
+                        "value": {"detail": "Ошибка: длина названия должна быть меньше или равна 30 символов."}
+                    },
+                    "Description too long": {
+                        "value": {"detail": "Ошибка: длина описания должна быть меньше или равна 3000 символов."}
+                    },
+                    "Invalid depth": {
+                        "value": {"detail": "Ошибка: глубина кровли коренного фундамента должна быть больше 0."}
+                    },
+                    "Invalid picture ID": {
+                        "value": {"detail": "Ошибка: идентификатор картинки должен быть больше 0."}
+                    },
+                    "Duplicate name": {
+                        "value": {"detail": "Ошибка: название должно быть уникальным (повторы не допускаются)."}
+                    }
+                }
+            }
+        }
+    }
+})
+async def foundations_update(foundation_id: int, foundation_name: str | None = None, foundation_description: str | None = None, foundation_depth_roof_root_in_meters: float | None = None, foundation_picture_id: int | None = None):
+    """Описание: изменение параметров фундамента. На ввод подаются идентификатор, название, описание, глубина кровли коренного фундамента и идентификатор картинки."""
     conn = get_db_connection()
-    if ((len(foundation_name) == 0)):
+    if foundation_name is not None and len(foundation_name) == 0:
         raise HTTPException(status_code=400, detail="Ошибка: название фундамента не должно быть пустым.")
-    if ((len(foundation_name) > 30)):
-        raise HTTPException(status_code=400, detail="Ошибка: название фундамента должно иметь длину не более 30 символов.")
-    x = update_foundation_name(conn, foundation_id, foundation_name)
-    return Response("{'messname':'Название фундамента обновлено.'}", status_code=200)
-
-@router.post("/foundations/update/description", tags=["FoundationController"])
-async def foundations_post_update_description(foundation_id: int, foundation_description: str):
-    """
-      Описание: изменение описания фундамента.
-      Ограничения: длина описания фундамента должна быть <= 3000 символов, и описание не должно быть пустым.
-    """
-    conn = get_db_connection()
-    if ((len(foundation_description) == 0)):
-        raise HTTPException(status_code=400, detail="Ошибка: описание фундамента не должно быть пустым.")
-    if ((len(foundation_description) > 3000)):
-        raise HTTPException(status_code=400, detail="Ошибка: описание фундамента должно иметь длину не более 3000 символов.")
-    x = update_foundation_description(conn, foundation_id, foundation_description)
-    return Response("{'messdescription':'Описание фундамента обновлено.'}", status_code=200)
-
-@router.post("/foundations/update/picture", tags=["FoundationController"])
-async def foundations_post_update_picture(foundation: Foundation.FoundationPicture):
-    """
-      Описание: изменение картинки фундамента.
-      Ограничения: длина содержимого файла с картинкой должна быть <= 10000000 символов.
-    """
-    conn = get_db_connection()
-    if ((len(foundation.foundation_picture) > 10000000)):
-        raise HTTPException(status_code=400, detail="Ошибка: содержимое файла с картинкой должно иметь длину не более 10000000 символов.")
-    x = update_foundation_picture(conn, foundation.foundation_id, foundation.foundation_picture)
-    return Response("{'messpicture':'Картинка фундамента обновлена.'}", status_code=200)
-
-@router.get("/foundations/get/picture", tags=["FoundationController"])
-async def foundations_get_picture(foundation_id: int):
-    """
-      Описание: получение картинки фундамента.
-    """
-    conn = get_db_connection()
-    y = get_one_foundation(conn, foundation_id)
-    if len(y) == 0:
-        raise HTTPException(status_code=404, detail="Ошибка: фундамент с данным ID не найден, потому получить его картинку невозможно.")
-    x = get_foundation_picture(conn, foundation_id)
-    return Response(json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False), status_code=200)
+    if foundation_name is not None and len(foundation_name) > 30:
+        raise HTTPException(status_code=400, detail="Ошибка: длина названия должна быть меньше или равна 30 символов.")
+    if foundation_description is not None and len(foundation_description) > 3000:
+        raise HTTPException(status_code=400, detail="Ошибка: длина описания должна быть меньше или равна 3000 символов.")
+    if foundation_depth_roof_root_in_meters is not None and foundation_depth_roof_root_in_meters < 0:
+        raise HTTPException(status_code=400, detail="Ошибка: глубина кровли коренного фундамента должна быть больше 0.")
+    if foundation_picture_id is not None and foundation_picture_id < 0:
+        raise HTTPException(status_code=400, detail="Ошибка: идентификатор картинки должен быть больше 0.")
+    if len(find_foundation_name_with_id(conn, foundation_id, foundation_name)) != 0:
+        raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
+    x = update_foundation(conn, foundation_id, foundation_name, foundation_description, foundation_depth_roof_root_in_meters, foundation_picture_id)
+    return Response("{'message':'Фундамент обновлён.'}", status_code=200)

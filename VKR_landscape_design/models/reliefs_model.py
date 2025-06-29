@@ -1,67 +1,92 @@
-import pandas
+import pandas as pd
 
-def get_reliefs(conn):
-    return pandas.read_sql('''
-    SELECT relief_id, relief_name, relief_description, relief_picture  
-    FROM reliefs
+def get_reliefs(conn, is_need_pictures=False):
+    reliefs = pd.read_sql('''
+        SELECT * FROM reliefs
     ''', conn)
 
+    if is_need_pictures:
+        for index, row in reliefs.iterrows():
+            picture_id = row['relief_picture_id']
+            if pd.notna(picture_id):
+                picture = pd.read_sql(f'''
+                    SELECT picture_base64 FROM pictures WHERE picture_id = {picture_id}
+                ''', conn)
+                if not picture.empty:
+                    reliefs.at[index, 'relief_picture_base64'] = picture.iloc[0]['picture_base64']
+            else:
+                reliefs.at[index, 'relief_picture_base64'] = None
+
+    return reliefs
+
+def get_one_relief(conn, user_relief_id, is_need_pictures=False):
+    relief = pd.read_sql(f'''
+        SELECT * FROM reliefs WHERE relief_id = {user_relief_id}
+    ''', conn)
+
+    if relief.empty:
+        return relief
+
+    if is_need_pictures:
+        picture_id = relief.iloc[0]['relief_picture_id']
+        if pd.notna(picture_id):
+            picture = pd.read_sql(f'''
+                SELECT picture_base64 FROM pictures WHERE picture_id = {picture_id}
+            ''', conn)
+            if not picture.empty:
+                relief.at[0, 'relief_picture_base64'] = picture.iloc[0]['picture_base64']
+        else:
+            relief.at[0, 'relief_picture_base64'] = None
+
+    return relief
+
 def find_relief_name(conn, user_relief_name):
-    return pandas.read_sql('''
-    SELECT * 
-    FROM reliefs
-    WHERE relief_name = "''' + str(user_relief_name) + '"', conn)
+    return pd.read_sql(f'''
+        SELECT relief_id
+        FROM reliefs
+        WHERE relief_name = "{user_relief_name}"
+    ''', conn)
 
-def get_one_relief(conn, user_relief_id):
-    return pandas.read_sql('''
-    SELECT relief_id, relief_name, relief_description 
-    FROM reliefs 
-    WHERE relief_id = ''' + str(user_relief_id), conn)
+def find_relief_name_with_id(conn, user_relief_id, user_relief_name):
+    return pd.read_sql(f'''
+        SELECT relief_id
+        FROM reliefs
+        WHERE relief_name = "{user_relief_name}" AND relief_id != {user_relief_id}
+    ''', conn)
 
-def insert_relief(conn, user_relief_name, user_relief_description):
+def insert_relief(conn, user_relief_name, user_relief_description, user_relief_picture_id):
     cur = conn.cursor()
     cur.execute('''
-        INSERT INTO reliefs(relief_name, relief_description) 
-        VALUES (:userreliefname, :userreliefdescription)
-        ''', {"userreliefname": user_relief_name, "userreliefdescription": user_relief_description})
+        INSERT INTO reliefs(relief_name, relief_description, relief_picture_id)
+        VALUES (:userreliefname, :userreliefdescription, :userreliefpictureid)
+    ''', {
+        "userreliefname": user_relief_name,
+        "userreliefdescription": user_relief_description,
+        "userreliefpictureid": user_relief_picture_id
+    })
     conn.commit()
 
 def delete_relief(conn, user_relief_id):
     cur = conn.cursor()
     cur.execute('''
-        DELETE FROM reliefs WHERE relief_id = :reliefiddelete
-        ''', {"reliefiddelete": user_relief_id})
+        DELETE FROM reliefs
+        WHERE relief_id = :reliefid
+    ''', {"reliefid": user_relief_id})
     conn.commit()
 
-def update_relief_name(conn, user_relief_id, user_relief_name):
+def update_relief(conn, user_relief_id, user_relief_name, user_relief_description, user_relief_picture_id):
     cur = conn.cursor()
     cur.execute('''
-        UPDATE reliefs 
-        SET relief_name = :userreliefname 
+        UPDATE reliefs
+        SET
+            relief_name = CASE WHEN :userreliefname IS NOT NULL THEN :userreliefname ELSE relief_name END,
+            relief_description = CASE WHEN :userreliefdescription IS NOT NULL THEN :userreliefdescription ELSE relief_description END,
+            relief_picture_id = CASE WHEN :userreliefpictureid IS NOT NULL THEN :userreliefpictureid ELSE relief_picture_id END
         WHERE relief_id = :userreliefid
-        ''', {"userreliefid": user_relief_id, "userreliefname": user_relief_name})
+    ''', {
+        "userreliefid": user_relief_id,
+        "userreliefname": user_relief_name,
+        "userreliefdescription": user_relief_description,
+        "userreliefpictureid": user_relief_picture_id
+    })
     conn.commit()
-
-def update_relief_description(conn, user_relief_id, user_relief_description):
-    cur = conn.cursor()
-    cur.execute('''
-        UPDATE reliefs 
-        SET relief_description = :userreliefdescription 
-        WHERE relief_id = :userreliefid
-        ''', {"userreliefid": user_relief_id, "userreliefdescription": user_relief_description})
-    conn.commit()
-
-def update_relief_picture(conn, user_relief_id, user_relief_picture):
-    cur = conn.cursor()
-    cur.execute('''
-        UPDATE reliefs 
-        SET relief_picture = :userreliefpicture 
-        WHERE relief_id = :userreliefid
-        ''', {"userreliefid": user_relief_id, "userreliefpicture": user_relief_picture})
-    conn.commit()
-
-def get_relief_picture(conn, user_relief_id):
-    return pandas.read_sql('''
-    SELECT relief_picture 
-    FROM reliefs
-    WHERE relief_id = ''' + str(user_relief_id), conn)

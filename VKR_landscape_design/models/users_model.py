@@ -1,176 +1,113 @@
-import pandas
-import hashlib
-import os
-import bcrypt
+import pandas as pd
 
-def get_users(conn):
-    return pandas.read_sql('''
-    SELECT user_id, user_login, user_password, user_email, user_surname, user_name, user_fathername, user_age, user_isFemale, user_picture, user_isAdmin 
-    FROM users
+def get_users(conn, is_need_pictures=False):
+    users = pd.read_sql('''
+        SELECT * FROM users
     ''', conn)
 
-def get_users_without_password(conn):
-    return pandas.read_sql('''
-    SELECT user_id, user_login, user_email, user_surname, user_name, user_fathername, user_age, user_isFemale, user_picture, user_isAdmin
-    FROM users
+    if is_need_pictures:
+        for index, row in users.iterrows():
+            picture_id = row['user_picture_id']
+            if pd.notna(picture_id):
+                picture = pd.read_sql(f'''
+                    SELECT picture_base64 FROM pictures WHERE picture_id = {picture_id}
+                ''', conn)
+                if not picture.empty:
+                    users.at[index, 'user_picture_base64'] = picture.iloc[0]['picture_base64']
+            else:
+                users.at[index, 'user_picture_base64'] = None
+
+    return users
+
+def get_one_user(conn, user_id, is_need_pictures=False):
+    user = pd.read_sql(f'''
+        SELECT * FROM users WHERE user_id = {user_id}
     ''', conn)
 
-def get_users_without_password_admins(conn):
-    return pandas.read_sql('''
-    SELECT user_id, user_login, user_email, user_surname, user_name, user_fathername, user_age, user_isFemale, user_picture
-    FROM users
-    WHERE user_isAdmin = TRUE
+    if user.empty:
+        return user
+
+    if is_need_pictures:
+        picture_id = user.iloc[0]['user_picture_id']
+        if pd.notna(picture_id):
+            picture = pd.read_sql(f'''
+                SELECT picture_base64 FROM pictures WHERE picture_id = {picture_id}
+            ''', conn)
+            if not picture.empty:
+                user.at[0, 'user_picture_base64'] = picture.iloc[0]['picture_base64']
+        else:
+            user.at[0, 'user_picture_base64'] = None
+
+    return user
+
+def find_user_login(conn, user_login):
+    return pd.read_sql(f'''
+        SELECT user_id
+        FROM users
+        WHERE user_login = "{user_login}"
     ''', conn)
 
-def get_users_without_password_noadmins(conn):
-    return pandas.read_sql('''
-    SELECT user_id, user_login, user_email, user_surname, user_name, user_fathername, user_age, user_isFemale, user_picture
-    FROM users
-    WHERE user_isAdmin = FALSE
+def find_user_login_with_id(conn, user_id, user_login):
+    return pd.read_sql(f'''
+        SELECT user_id
+        FROM users
+        WHERE user_login = "{user_login}" AND user_id != {user_id}
     ''', conn)
 
-def get_one_user(conn, user_user_id):
-    return pandas.read_sql('''
-    SELECT user_id, user_login, user_password, user_email, user_surname, user_name, user_fathername, user_age, user_isFemale, user_isAdmin 
-    FROM users 
-    WHERE user_id = ''' + str(user_user_id), conn)
-
-def find_user_login(conn, user_user_login):
-    return pandas.read_sql('''
-    SELECT * 
-    FROM users
-    WHERE user_login = "''' + str(user_user_login) + '"', conn)
-
-def find_user_email(conn, user_user_email):
-    return pandas.read_sql('''
-    SELECT * 
-    FROM users
-    WHERE user_email = "''' + str(user_user_email) + '"', conn)
-
-def get_one_user_without_password(conn, user_user_id):
-    return pandas.read_sql('''
-    SELECT user_id, user_login, user_email, user_surname, user_name, user_fathername, user_age, user_isFemale, user_isAdmin 
-    FROM users 
-    WHERE user_id = ''' + str(user_user_id), conn)
-
-def authorisation(conn, user_user_login, user_user_password):
-    h = hashlib.md5(user_user_password.encode('utf8'))
-    p = h.hexdigest()
-    return pandas.read_sql('''
-    SELECT user_id, user_isAdmin
-    FROM users
-    WHERE user_login = "''' + user_user_login + '" AND user_password = "' + str(p) + '"', conn)
-
-def insert_user(conn, user_user_login, user_user_password, user_user_email):
-    h = hashlib.md5(user_user_password.encode('utf8'))
-    p = h.hexdigest()
+def insert_user(conn, user_login, user_password, user_email, user_surname, user_name, user_fathername, user_age, user_is_female, user_is_admin, user_picture_id):
     cur = conn.cursor()
     cur.execute('''
-        INSERT INTO users(user_login, user_password, user_email, user_isAdmin) VALUES (:userlogin, :userpassword, :useremail, FALSE)
-        ''', {"userlogin": user_user_login, "userpassword": p, "useremail": user_user_email})
+        INSERT INTO users(user_login, user_password, user_email, user_surname, user_name, user_fathername, user_age, user_is_female, user_is_admin, user_picture_id)
+        VALUES (:userlogin, :userpassword, :useremail, :usersurname, :username, :userfathername, :userage, :userisfemale, :userisadmin, :userpictureid)
+    ''', {
+        "userlogin": user_login,
+        "userpassword": user_password,
+        "useremail": user_email,
+        "usersurname": user_surname,
+        "username": user_name,
+        "userfathername": user_fathername,
+        "userage": user_age,
+        "userisfemale": user_is_female,
+        "userisadmin": user_is_admin,
+        "userpictureid": user_picture_id
+    })
     conn.commit()
 
-def delete_user(conn, user_user_id):
+def delete_user(conn, user_id):
     cur = conn.cursor()
     cur.execute('''
-        DELETE FROM users WHERE user_id = :useriddelete
-        ''', {"useriddelete": user_user_id})
+        DELETE FROM users
+        WHERE user_id = :userid
+    ''', {"userid": user_id})
     conn.commit()
 
-def update_user_login(conn, user_user_id, user_user_login):
+def update_user(conn, user_id, user_login, user_password, user_email, user_surname, user_name, user_fathername, user_age, user_is_female, user_is_admin, user_picture_id):
     cur = conn.cursor()
     cur.execute('''
-        UPDATE users 
-        SET user_login = :userlogin 
-        WHERE user_id = :useridupdate
-        ''', {"useridupdate": user_user_id, "userlogin": user_user_login})
+        UPDATE users
+        SET
+            user_login = CASE WHEN :userlogin IS NOT NULL THEN :userlogin ELSE user_login END,
+            user_password = CASE WHEN :userpassword IS NOT NULL THEN :userpassword ELSE user_password END,
+            user_email = CASE WHEN :useremail IS NOT NULL THEN :useremail ELSE user_email END,
+            user_surname = CASE WHEN :usersurname IS NOT NULL THEN :usersurname ELSE user_surname END,
+            user_name = CASE WHEN :username IS NOT NULL THEN :username ELSE user_name END,
+            user_fathername = CASE WHEN :userfathername IS NOT NULL THEN :userfathername ELSE user_fathername END,
+            user_age = CASE WHEN :userage IS NOT NULL THEN :userage ELSE user_age END,
+            user_is_female = CASE WHEN :userisfemale IS NOT NULL THEN :userisfemale ELSE user_is_female END,
+            user_is_admin = CASE WHEN :userisadmin IS NOT NULL THEN :userisadmin ELSE user_is_admin END,
+            user_picture_id = CASE WHEN :userpictureid IS NOT NULL THEN :userpictureid ELSE user_picture_id END
+        WHERE user_id = :userid
+    ''', {
+        "userid": user_id,
+        "userlogin": user_login,
+        "userpassword": user_password,
+        "useremail": user_email,
+        "usersurname": user_surname,
+        "username": user_name,
+        "userfathername": user_fathername,
+        "userage": user_age,
+        "userisfemale": user_is_female,
+        "userisadmin": user_is_admin,
+        "userpictureid": user_picture_id
+    })
     conn.commit()
-
-def update_user_password(conn, user_user_id, user_user_password):
-    h = hashlib.md5(user_user_password.encode('utf8'))
-    p = h.hexdigest()
-    cur = conn.cursor()
-    cur.execute('''
-        UPDATE users 
-        SET user_password = :userpassword 
-        WHERE user_id = :useridupdate
-        ''', {"useridupdate": user_user_id, "userpassword": p})
-    conn.commit()
-
-def update_user_email(conn, user_user_id, user_user_email):
-    cur = conn.cursor()
-    cur.execute('''
-        UPDATE users 
-        SET user_email = :useremail 
-        WHERE user_id = :useridupdate
-        ''', {"useridupdate": user_user_id, "useremail": user_user_email})
-    conn.commit()
-
-def update_user_surname(conn, user_user_id, user_user_surname):
-    cur = conn.cursor()
-    cur.execute('''
-        UPDATE users 
-        SET user_surname = :usersurname 
-        WHERE user_id = :useridupdate
-        ''', {"useridupdate": user_user_id, "usersurname": user_user_surname})
-    conn.commit()
-
-def update_user_name(conn, user_user_id, user_user_name):
-    cur = conn.cursor()
-    cur.execute('''
-        UPDATE users 
-        SET user_name = :username 
-        WHERE user_id = :useridupdate
-        ''', {"useridupdate": user_user_id, "username": user_user_name})
-    conn.commit()
-
-def update_user_fathername(conn, user_user_id, user_user_fathername):
-    cur = conn.cursor()
-    cur.execute('''
-        UPDATE users 
-        SET user_fathername = :userfathername 
-        WHERE user_id = :useridupdate
-        ''', {"useridupdate": user_user_id, "userfathername": user_user_fathername})
-    conn.commit()
-
-def update_user_age(conn, user_user_id, user_user_age):
-    cur = conn.cursor()
-    cur.execute('''
-        UPDATE users 
-        SET user_age = :userage 
-        WHERE user_id = :useridupdate
-        ''', {"useridupdate": user_user_id, "userage": user_user_age})
-    conn.commit()
-
-def update_user_isFemale(conn, user_user_id, user_user_isFemale):
-    cur = conn.cursor()
-    cur.execute('''
-        UPDATE users 
-        SET user_isFemale = :userisFemale 
-        WHERE user_id = :useridupdate
-        ''', {"useridupdate": user_user_id, "userisFemale": user_user_isFemale})
-    conn.commit()
-
-def update_user_picture(conn, user_user_id, user_user_picture):
-    cur = conn.cursor()
-    cur.execute('''
-        UPDATE users 
-        SET user_picture = :userpicture 
-        WHERE user_id = :useridupdate
-        ''', {"useridupdate": user_user_id, "userpicture": user_user_picture})
-    conn.commit()
-
-def update_user_isAdmin(conn, user_user_id, user_user_isAdmin):
-    cur = conn.cursor()
-    cur.execute('''
-        UPDATE users 
-        SET user_isAdmin = :userisAdmin 
-        WHERE user_id = :useridupdate
-        ''', {"useridupdate": user_user_id, "userisAdmin": user_user_isAdmin})
-    conn.commit()
-
-def get_user_picture(conn, user_user_id):
-    return pandas.read_sql('''
-    SELECT user_picture 
-    FROM users
-    WHERE user_id = ''' + str(user_user_id), conn)
