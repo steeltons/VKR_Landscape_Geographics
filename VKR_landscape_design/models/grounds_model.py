@@ -1,9 +1,25 @@
 import pandas as pd
 
-def get_grounds(conn, is_need_pictures=False):
-    grounds = pd.read_sql('''
-        SELECT * FROM grounds
-    ''', conn)
+def get_grounds(conn, is_need_pictures=False, search_query=None, page=None, elements=None):
+    offset = 0
+    if page is not None and elements is not None:
+        offset = (page - 1) * elements
+
+    query = '''
+        SELECT * FROM grounds 
+        ORDER BY ground_name ASC
+    '''
+
+    if search_query:
+        query += f'''
+            WHERE ground_name LIKE '%{search_query}%'
+            OR ground_description LIKE '%{search_query}%'
+        '''
+
+    if elements is not None:
+        query += f' LIMIT {elements} OFFSET {offset}'
+
+    grounds = pd.read_sql(query, conn)
 
     if is_need_pictures:
         for index, row in grounds.iterrows():
@@ -18,6 +34,7 @@ def get_grounds(conn, is_need_pictures=False):
                 grounds.at[index, 'ground_picture_base64'] = None
 
     return grounds
+
 
 def get_one_ground(conn, user_ground_id, is_need_pictures=False):
     ground = pd.read_sql(f'''

@@ -1,9 +1,25 @@
 import pandas as pd
 
-def get_climats(conn, is_need_pictures=False):
-    climats = pd.read_sql('''
-        SELECT * FROM climats
-    ''', conn)
+def get_climats(conn, is_need_pictures=False, search_query=None, page=None, elements=None):
+    offset = 0
+    if page is not None and elements is not None:
+        offset = (page - 1) * elements
+
+    query = '''
+        SELECT * FROM climats 
+        ORDER BY climat_name ASC
+    '''
+
+    if search_query:
+        query += f'''
+            WHERE climat_name LIKE '%{search_query}%'
+            OR climat_description LIKE '%{search_query}%'
+        '''
+
+    if elements is not None:
+        query += f' LIMIT {elements} OFFSET {offset}'
+
+    climats = pd.read_sql(query, conn)
 
     if is_need_pictures:
         for index, row in climats.iterrows():
@@ -18,6 +34,7 @@ def get_climats(conn, is_need_pictures=False):
                 climats.at[index, 'climat_picture_base64'] = None
 
     return climats
+
 
 def get_one_climat(conn, user_climat_id, is_need_pictures=False):
     climat = pd.read_sql(f'''

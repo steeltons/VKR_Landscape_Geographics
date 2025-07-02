@@ -1,9 +1,25 @@
 import pandas as pd
 
-def get_reliefs(conn, is_need_pictures=False):
-    reliefs = pd.read_sql('''
-        SELECT * FROM reliefs
-    ''', conn)
+def get_reliefs(conn, is_need_pictures=False, search_query=None, page=None, elements=None):
+    offset = 0
+    if page is not None and elements is not None:
+        offset = (page - 1) * elements
+
+    query = '''
+        SELECT * FROM reliefs 
+        ORDER BY relief_name ASC
+    '''
+
+    if search_query:
+        query += f'''
+            WHERE relief_name LIKE '%{search_query}%'
+            OR relief_description LIKE '%{search_query}%'
+        '''
+
+    if elements is not None:
+        query += f' LIMIT {elements} OFFSET {offset}'
+
+    reliefs = pd.read_sql(query, conn)
 
     if is_need_pictures:
         for index, row in reliefs.iterrows():
@@ -18,6 +34,7 @@ def get_reliefs(conn, is_need_pictures=False):
                 reliefs.at[index, 'relief_picture_base64'] = None
 
     return reliefs
+
 
 def get_one_relief(conn, user_relief_id, is_need_pictures=False):
     relief = pd.read_sql(f'''

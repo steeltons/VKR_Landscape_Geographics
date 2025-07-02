@@ -51,16 +51,35 @@ foundation_list_example = [
                 }
             }
         }
+    },
+    400: {
+        "description": "Invalid input parameters",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: недопустимые параметры пагинации или поиска."}
+            }
+        }
     }
 })
-async def foundations_get_select_all(is_need_pictures: bool = False):
-    """Описание: получение данных обо всех фундаментах."""
+async def foundations_get_select_all(
+    is_need_pictures: bool = False,
+    search_query: str | None = None,
+    page: int | None = None,
+    elements: int | None = None
+):
+    """Описание: получение данных обо всех фундаментах с поддержкой пагинации и поиска."""
+    if page is not None and page < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: номер страницы должен быть положительным числом.")
+    if elements is not None and elements < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: количество объектов на странице должно быть положительным числом.")
+
     conn = get_db_connection()
-    x = get_foundations(conn, is_need_pictures)
+    x = get_foundations(conn, is_need_pictures, search_query, page, elements)
     return Response(
         json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace("NaN", "null"),
         status_code=200
     )
+
 
 @router.get("/foundations/one", tags=["FoundationController"], responses={
     200: {
@@ -172,8 +191,6 @@ async def foundations_insert(foundation_name: str, foundation_description: str |
         raise HTTPException(status_code=400, detail="Ошибка: длина описания должна быть меньше или равна 3000 символов.")
     if foundation_depth_roof_root_in_meters is not None and foundation_depth_roof_root_in_meters < 0:
         raise HTTPException(status_code=400, detail="Ошибка: глубина кровли коренного фундамента должна быть больше 0.")
-    if foundation_picture_id is not None and foundation_picture_id < 0:
-        raise HTTPException(status_code=400, detail="Ошибка: идентификатор картинки должен быть больше 0.")
     if len(find_foundation_name(conn, foundation_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = insert_foundation(conn, foundation_name, foundation_description, foundation_depth_roof_root_in_meters, foundation_picture_id)
@@ -228,8 +245,6 @@ async def foundations_update(foundation_id: int, foundation_name: str | None = N
         raise HTTPException(status_code=400, detail="Ошибка: длина описания должна быть меньше или равна 3000 символов.")
     if foundation_depth_roof_root_in_meters is not None and foundation_depth_roof_root_in_meters < 0:
         raise HTTPException(status_code=400, detail="Ошибка: глубина кровли коренного фундамента должна быть больше 0.")
-    if foundation_picture_id is not None and foundation_picture_id < 0:
-        raise HTTPException(status_code=400, detail="Ошибка: идентификатор картинки должен быть больше 0.")
     if len(find_foundation_name_with_id(conn, foundation_id, foundation_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = update_foundation(conn, foundation_id, foundation_name, foundation_description, foundation_depth_roof_root_in_meters, foundation_picture_id)

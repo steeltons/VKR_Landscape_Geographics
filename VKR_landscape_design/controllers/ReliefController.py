@@ -48,16 +48,35 @@ relief_list_example = [
                 }
             }
         }
+    },
+    400: {
+        "description": "Invalid input parameters",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: недопустимые параметры пагинации или поиска."}
+            }
+        }
     }
 })
-async def reliefs_get_select_all(is_need_pictures: bool = False):
-    """Описание: получение данных обо всех рельефах."""
+async def reliefs_get_select_all(
+    is_need_pictures: bool = False,
+    search_query: str | None = None,
+    page: int | None = None,
+    elements: int | None = None
+):
+    """Описание: получение данных обо всех рельефах с поддержкой пагинации и поиска."""
+    if page is not None and page < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: номер страницы должен быть положительным числом.")
+    if elements is not None and elements < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: количество объектов на странице должно быть положительным числом.")
+
     conn = get_db_connection()
-    x = get_reliefs(conn, is_need_pictures)
+    x = get_reliefs(conn, is_need_pictures, search_query, page, elements)
     return Response(
         json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace("NaN", "null"),
         status_code=200
     )
+
 
 @router.get("/reliefs/one", tags=["ReliefController"], responses={
     200: {
@@ -164,8 +183,6 @@ async def reliefs_insert(relief_name: str, relief_description: str | None = None
         raise HTTPException(status_code=400, detail="Ошибка: длина названия должна быть меньше или равна 30 символов.")
     if relief_description is not None and len(relief_description) > 3000:
         raise HTTPException(status_code=400, detail="Ошибка: длина описания должна быть меньше или равна 3000 символов.")
-    if relief_picture_id is not None and relief_picture_id < 0:
-        raise HTTPException(status_code=400, detail="Ошибка: идентификатор картинки должен быть больше 0.")
     if len(find_relief_name(conn, relief_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = insert_relief(conn, relief_name, relief_description, relief_picture_id)
@@ -215,8 +232,6 @@ async def reliefs_update(relief_id: int, relief_name: str | None = None, relief_
         raise HTTPException(status_code=400, detail="Ошибка: длина названия должна быть меньше или равна 30 символов.")
     if relief_description is not None and len(relief_description) > 3000:
         raise HTTPException(status_code=400, detail="Ошибка: длина описания должна быть меньше или равна 3000 символов.")
-    if relief_picture_id is not None and relief_picture_id < 0:
-        raise HTTPException(status_code=400, detail="Ошибка: идентификатор картинки должен быть больше 0.")
     if len(find_relief_name_with_id(conn, relief_id, relief_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = update_relief(conn, relief_id, relief_name, relief_description, relief_picture_id)

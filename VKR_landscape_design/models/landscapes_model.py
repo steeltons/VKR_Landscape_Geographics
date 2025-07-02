@@ -1,9 +1,26 @@
 import pandas as pd
 
-def get_landscapes(conn, is_need_pictures=False):
-    landscapes = pd.read_sql('''
-        SELECT * FROM landscapes
-    ''', conn)
+def get_landscapes(conn, is_need_pictures=False, search_query=None, page=None, elements=None):
+    offset = 0
+    if page is not None and elements is not None:
+        offset = (page - 1) * elements
+
+    query = '''
+        SELECT * FROM landscapes 
+        ORDER BY landscape_code ASC, landscape_name ASC
+    '''
+
+    if search_query:
+        query += f'''
+            WHERE landscape_name LIKE '%{search_query}%'
+            OR landscape_description LIKE '%{search_query}%'
+            OR landscape_code LIKE '%{search_query}%'
+        '''
+
+    if elements is not None:
+        query += f' LIMIT {elements} OFFSET {offset}'
+
+    landscapes = pd.read_sql(query, conn)
 
     if is_need_pictures:
         for index, row in landscapes.iterrows():
@@ -18,6 +35,7 @@ def get_landscapes(conn, is_need_pictures=False):
                 landscapes.at[index, 'landscape_picture_base64'] = None
 
     return landscapes
+
 
 def get_one_landscape(conn, user_landscape_id, is_need_pictures=False):
     landscape = pd.read_sql(f'''

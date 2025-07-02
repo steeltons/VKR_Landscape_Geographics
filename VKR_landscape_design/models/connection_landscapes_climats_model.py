@@ -1,10 +1,33 @@
 import pandas as pd
 
-def get_connections_landscapes_climats(conn):
-    return pd.read_sql('''
+def get_connections_landscapes_climats(conn, search_query=None, page=None, elements=None):
+    offset = 0
+    if page is not None and elements is not None:
+        offset = (page - 1) * elements
+
+    query = '''
         SELECT connection_id, landscape_id, climat_id
         FROM connections_landscapes_climats
-    ''', conn)
+    '''
+
+    if search_query:
+        query += f'''
+            WHERE connection_id LIKE '%{search_query}%'
+            OR landscape_id LIKE '%{search_query}%'
+            OR climat_id LIKE '%{search_query}%'
+        '''
+
+    query += '''
+        ORDER BY landscape_id, climat_id
+    '''
+
+    if elements is not None:
+        query += f' LIMIT {elements} OFFSET {offset}'
+
+    connections = pd.read_sql(query, conn)
+
+    return connections
+
 
 def get_one_connection_landscapes_climats(conn, user_connection_id):
     return pd.read_sql(f'''

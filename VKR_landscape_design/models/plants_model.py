@@ -1,9 +1,25 @@
 import pandas as pd
 
-def get_plants(conn, is_need_pictures=False):
-    plants = pd.read_sql('''
-        SELECT * FROM plants
-    ''', conn)
+def get_plants(conn, is_need_pictures=False, search_query=None, page=None, elements=None):
+    offset = 0
+    if page is not None and elements is not None:
+        offset = (page - 1) * elements
+
+    query = '''
+        SELECT * FROM plants 
+        ORDER BY plant_name ASC
+    '''
+
+    if search_query:
+        query += f'''
+            WHERE plant_name LIKE '%{search_query}%'
+            OR plant_description LIKE '%{search_query}%'
+        '''
+
+    if elements is not None:
+        query += f' LIMIT {elements} OFFSET {offset}'
+
+    plants = pd.read_sql(query, conn)
 
     if is_need_pictures:
         for index, row in plants.iterrows():
@@ -18,6 +34,7 @@ def get_plants(conn, is_need_pictures=False):
                 plants.at[index, 'plant_picture_base64'] = None
 
     return plants
+
 
 def get_one_plant(conn, user_plant_id, is_need_pictures=False):
     plant = pd.read_sql(f'''

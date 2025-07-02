@@ -1,26 +1,45 @@
 import pandas as pd
 
-def get_territories(conn):
-    return pd.read_sql('''
-        SELECT territorie_id, territorie_landscape_id, territorie_description
+def get_territories(conn, search_query=None, page=None, elements=None):
+    offset = 0
+    if page is not None and elements is not None:
+        offset = (page - 1) * elements
+
+    query = '''
+        SELECT territorie_id, territorie_landscape_id, territorie_description, territorie_color_r, territorie_color_g, territorie_color_b
         FROM territories
-    ''', conn)
+    '''
+
+    if search_query:
+        query += f'''
+            WHERE territorie_description LIKE '%{search_query}%'
+        '''
+
+    if elements is not None:
+        query += f' LIMIT {elements} OFFSET {offset}'
+
+    territories = pd.read_sql(query, conn)
+
+    return territories
 
 def get_one_territorie(conn, user_territorie_id):
     return pd.read_sql(f'''
-        SELECT territorie_id, territorie_landscape_id, territorie_description
+        SELECT territorie_id, territorie_landscape_id, territorie_description, territorie_color_r, territorie_color_g, territorie_color_b
         FROM territories
         WHERE territorie_id = {user_territorie_id}
     ''', conn)
 
-def insert_territorie(conn, user_territorie_landscape_id, user_territorie_description):
+def insert_territorie(conn, user_territorie_landscape_id, user_territorie_description, user_territorie_color_r, user_territorie_color_g, user_territorie_color_b):
     cur = conn.cursor()
     cur.execute('''
-        INSERT INTO territories(territorie_landscape_id, territorie_description)
-        VALUES (:userterritorielandscapeid, :userterritoriedescription)
+        INSERT INTO territories(territorie_landscape_id, territorie_description, territorie_color_r, territorie_color_g, territorie_color_b)
+        VALUES (:userterritorielandscapeid, :userterritoriedescription, :userterritoriecolorr, :userterritoriecolorg, :userterritoriecolorb)
     ''', {
         "userterritorielandscapeid": user_territorie_landscape_id,
-        "userterritoriedescription": user_territorie_description
+        "userterritoriedescription": user_territorie_description,
+        "userterritoriecolorr": user_territorie_color_r,
+        "userterritoriecolorg": user_territorie_color_g,
+        "userterritoriecolorb": user_territorie_color_b
     })
     conn.commit()
 
@@ -32,18 +51,24 @@ def delete_territorie(conn, user_territorie_id):
     ''', {"territorieid": user_territorie_id})
     conn.commit()
 
-def update_territorie(conn, user_territorie_id, user_territorie_landscape_id, user_territorie_description):
+def update_territorie(conn, user_territorie_id, user_territorie_landscape_id, user_territorie_description, user_territorie_color_r, user_territorie_color_g, user_territorie_color_b):
     cur = conn.cursor()
     cur.execute('''
         UPDATE territories
         SET
             territorie_landscape_id = :userterritorielandscapeid,
-            territorie_description = :userterritoriedescription
+            territorie_description = :userterritoriedescription,
+            territorie_color_r = :userterritoriecolorr,
+            territorie_color_g = :userterritoriecolorg,
+            territorie_color_b = :userterritoriecolorb
         WHERE territorie_id = :userterritorieid
     ''', {
         "userterritorieid": user_territorie_id,
         "userterritorielandscapeid": user_territorie_landscape_id,
-        "userterritoriedescription": user_territorie_description
+        "userterritoriedescription": user_territorie_description,
+        "userterritoriecolorr": user_territorie_color_r,
+        "userterritoriecolorg": user_territorie_color_g,
+        "userterritoriecolorb": user_territorie_color_b
     })
     conn.commit()
 

@@ -1,10 +1,8 @@
-from fastapi import APIRouter, Response, HTTPException
+from fastapi import APIRouter, Response, HTTPException, Depends
 import json
 from models.territories_model import *
 from utils import get_db_connection
-from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from utils import get_db_connection
 from controllers.UserController import get_current_active_admin_user
 
 router = APIRouter()
@@ -14,14 +12,20 @@ security = HTTPBearer()
 territorie_example = {
     "territorie_id": 1,
     "territorie_landscape_id": 1,
-    "territorie_description": "Описание территории"
+    "territorie_description": "Описание территории",
+    "territorie_color_r": 0,
+    "territorie_color_g": 0,
+    "territorie_color_b": 0
 }
 
 territorie_with_related_objects_example = {
     "territorie": {
         "territorie_id": 1,
         "territorie_landscape_id": 1,
-        "territorie_description": "Описание территории"
+        "territorie_description": "Описание территории",
+        "territorie_color_r": 0,
+        "territorie_color_g": 0,
+        "territorie_color_b": 0
     },
     "landscape": {
         "landscape_id": 1,
@@ -110,12 +114,18 @@ territorie_list_example = [
     {
         "territorie_id": 1,
         "territorie_landscape_id": 1,
-        "territorie_description": "Описание территории 1"
+        "territorie_description": "Описание территории 1",
+        "territorie_color_r": 0,
+        "territorie_color_g": 0,
+        "territorie_color_b": 0
     },
     {
         "territorie_id": 2,
         "territorie_landscape_id": 2,
-        "territorie_description": "Описание территории 2"
+        "territorie_description": "Описание территории 2",
+        "territorie_color_r": 0,
+        "territorie_color_g": 0,
+        "territorie_color_b": 0
     }
 ]
 
@@ -153,16 +163,34 @@ coord_list_example = [
                 }
             }
         }
+    },
+    400: {
+        "description": "Invalid input parameters",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: недопустимые параметры пагинации или поиска."}
+            }
+        }
     }
 })
-async def territories_get_select_all():
-    """Описание: получение данных обо всех территориях."""
+async def territories_get_select_all(
+    search_query: str | None = None,
+    page: int | None = None,
+    elements: int | None = None
+):
+    """Описание: получение данных обо всех территориях с поддержкой пагинации и поиска."""
+    if page is not None and page < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: номер страницы должен быть положительным числом.")
+    if elements is not None and elements < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: количество объектов на странице должно быть положительным числом.")
+
     conn = get_db_connection()
-    x = get_territories(conn)
+    x = get_territories(conn, search_query, page, elements)
     return Response(
         json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace("NaN", "null"),
         status_code=200
     )
+
 
 @router.get("/territories/{territorie_id}/related-objects", tags=["TerritorieController"], responses={
     200: {
@@ -190,37 +218,12 @@ async def territories_get_related_objects(territorie_id: int, is_need_pictures: 
     """Описание: получение всех связанных объектов с территорией."""
     conn = get_db_connection()
     result = get_territorie_with_related_objects(conn, territorie_id, is_need_pictures)
-
     if result is None:
         raise HTTPException(status_code=404, detail="Ошибка: территория или связанные объекты не найдены.")
-
     return Response(
         json.dumps(result, indent=2, ensure_ascii=False),
         status_code=200
     )
-
-@router.get("/territories/one", tags=["TerritorieController"], responses={
-    200: {
-        "description": "Successful Response",
-        "content": {
-            "application/json": {
-                "examples": {
-                    "Example response": {
-                        "value": territorie_example
-                    }
-                }
-            }
-        }
-    },
-    404: {
-        "description": "Territorie not found",
-        "content": {
-            "application/json": {
-                "example": {"detail": "Ошибка: территория с данным ID не найдена."}
-            }
-        }
-    }
-})
 
 @router.get("/territories/one", tags=["TerritorieController"], responses={
     200: {
@@ -311,25 +314,19 @@ def get_all_territories(conn):
     }
 })
 async def check_point_in_territories(point_x: float, point_y: float):
-    """
-    Описание: Проверка принадлежности точки территориям.
-    Принимает координаты точки и возвращает идентификаторы территорий, которым принадлежит точка.
-    """
+    """Описание: Проверка принадлежности точки территориям.
+    Принимает координаты точки и возвращает идентификаторы территорий, которым принадлежит точка."""
     conn = get_db_connection()
     territorie_ids = []
     territories = get_all_territories(conn)
-
     for territorie_id in territories:
         coords_df = get_coords_by_territorie_id(conn, territorie_id)
         if len(coords_df) == 0:
             continue
-
         polygon_coords = list(zip(coords_df['coords_coord_x'], coords_df['coords_coord_y']))
         is_inside = is_point_in_polygon(point_x, point_y, polygon_coords)
-
         if is_inside:
             territorie_ids.append(territorie_id)
-
     if not territorie_ids:
         return {"message": "Точка не принадлежит ни одной территории."}
     else:
@@ -367,10 +364,8 @@ async def territories_contains_point(territorie_id: int, point_x: float, point_y
     coords_df = get_coords_by_territorie_id(conn, territorie_id)
     if len(coords_df) == 0:
         raise HTTPException(status_code=404, detail="Ошибка: координаты для данной территории не найдены.")
-
     polygon_coords = list(zip(coords_df['coords_coord_x'], coords_df['coords_coord_y']))
     is_inside = is_point_in_polygon(point_x, point_y, polygon_coords)
-
     return Response(
         json.dumps({"is_inside": is_inside}, indent=2),
         status_code=200
@@ -395,7 +390,7 @@ async def territories_contains_point(territorie_id: int, point_x: float, point_y
     }
 })
 async def territories_delete(territorie_id: int,
-    current_user: dict = Depends(get_current_active_admin_user)):
+                             current_user: dict = Depends(get_current_active_admin_user)):
     """Описание: удаление территории по её ID."""
     conn = get_db_connection()
     y = get_one_territorie(conn, territorie_id)
@@ -414,11 +409,22 @@ async def territories_delete(territorie_id: int,
         }
     }
 })
-async def territories_insert(territorie_landscape_id: int | None = None, territorie_description: str | None = None,
-    current_user: dict = Depends(get_current_active_admin_user)):
+async def territories_insert(
+    territorie_landscape_id: int | None = None,
+    territorie_description: str | None = None,
+    territorie_color_r: int | None = None,
+    territorie_color_g: int | None = None,
+    territorie_color_b: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)
+):
     """Описание: добавление территории. На ввод подаются идентификатор ландшафта и описание."""
+    if (((territorie_color_r is not None) and ((territorie_color_r < 0) or (territorie_color_r > 255)))
+            or ((territorie_color_g is not None) and ((territorie_color_g < 0) or (territorie_color_g > 255)))
+            or ((territorie_color_b is not None) and ((territorie_color_b < 0) or (territorie_color_b > 255)))):
+        raise HTTPException(status_code=400, detail="Ошибка: значения цветов должны быть в диапазоне от 0 до 255.")
+
     conn = get_db_connection()
-    x = insert_territorie(conn, territorie_landscape_id, territorie_description)
+    x = insert_territorie(conn, territorie_landscape_id, territorie_description, territorie_color_r, territorie_color_g, territorie_color_b)
     return Response("{'message':'Территория создана.'}", status_code=200)
 
 @router.patch("/territories/update", tags=["TerritorieController"], responses={
@@ -431,14 +437,24 @@ async def territories_insert(territorie_landscape_id: int | None = None, territo
         }
     }
 })
-async def territories_update(territorie_id: int, territorie_landscape_id: int | None = None, territorie_description: str | None = None,
-    current_user: dict = Depends(get_current_active_admin_user)):
+async def territories_update(
+    territorie_id: int,
+    territorie_landscape_id: int | None = None,
+    territorie_description: str | None = None,
+    territorie_color_r: int | None = None,
+    territorie_color_g: int | None = None,
+    territorie_color_b: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)
+):
     """Описание: изменение параметров территории. На ввод подаются идентификатор, идентификатор ландшафта и описание."""
+    if (((territorie_color_r is not None) and ((territorie_color_r < 0) or (territorie_color_r > 255)))
+            or ((territorie_color_g is not None) and ((territorie_color_g < 0) or (territorie_color_g > 255)))
+            or ((territorie_color_b is not None) and ((territorie_color_b < 0) or (territorie_color_b > 255)))):
+        raise HTTPException(status_code=400, detail="Ошибка: значения цветов должны быть в диапазоне от 0 до 255.")
+
     conn = get_db_connection()
-    x = update_territorie(conn, territorie_id, territorie_landscape_id, territorie_description)
+    x = update_territorie(conn, territorie_id, territorie_landscape_id, territorie_description, territorie_color_r, territorie_color_g, territorie_color_b)
     return Response("{'message':'Территория обновлена.'}", status_code=200)
-
-
 
 @router.post("/territories/point-related-objects", tags=["TerritorieController"], responses={
     200: {
@@ -472,34 +488,26 @@ async def territories_update(territorie_id: int, territorie_landscape_id: int | 
     }
 })
 async def get_related_objects_for_point(point_x: float, point_y: float, is_need_pictures: bool = False):
-    """
-    Описание: Получение всех связанных объектов для территорий, которым принадлежит точка.
-    Принимает координаты точки и флаг is_need_pictures.
-    """
+    """Описание: Получение всех связанных объектов для территорий, которым принадлежит точка.
+    Принимает координаты точки и флаг is_need_pictures."""
     conn = get_db_connection()
     territorie_ids = []
     territories = get_all_territories(conn)
-
     for territorie_id in territories:
         coords_df = get_coords_by_territorie_id(conn, territorie_id)
         if len(coords_df) == 0:
             continue
-
         polygon_coords = list(zip(coords_df['coords_coord_x'], coords_df['coords_coord_y']))
         is_inside = is_point_in_polygon(point_x, point_y, polygon_coords)
-
         if is_inside:
             territorie_ids.append(territorie_id)
-
     if not territorie_ids:
         return {"message": "Точка не принадлежит ни одной территории."}
-
     result = []
     for territorie_id in territorie_ids:
         territorie_data = get_territorie_with_related_objects(conn, territorie_id, is_need_pictures)
         if territorie_data:
             result.append(territorie_data)
-
     return Response(
         json.dumps({"territories": result}, indent=2, ensure_ascii=False),
         status_code=200

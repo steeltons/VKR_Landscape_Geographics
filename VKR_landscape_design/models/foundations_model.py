@@ -1,9 +1,25 @@
 import pandas as pd
 
-def get_foundations(conn, is_need_pictures=False):
-    foundations = pd.read_sql('''
-        SELECT * FROM foundations
-    ''', conn)
+def get_foundations(conn, is_need_pictures=False, search_query=None, page=None, elements=None):
+    offset = 0
+    if page is not None and elements is not None:
+        offset = (page - 1) * elements
+
+    query = '''
+        SELECT * FROM foundations 
+        ORDER BY foundation_name ASC
+    '''
+
+    if search_query:
+        query += f'''
+            WHERE foundation_name LIKE '%{search_query}%'
+            OR foundation_description LIKE '%{search_query}%'
+        '''
+
+    if elements is not None:
+        query += f' LIMIT {elements} OFFSET {offset}'
+
+    foundations = pd.read_sql(query, conn)
 
     if is_need_pictures:
         for index, row in foundations.iterrows():
@@ -18,6 +34,7 @@ def get_foundations(conn, is_need_pictures=False):
                 foundations.at[index, 'foundation_picture_base64'] = None
 
     return foundations
+
 
 def get_one_foundation(conn, user_foundation_id, is_need_pictures=False):
     foundation = pd.read_sql(f'''

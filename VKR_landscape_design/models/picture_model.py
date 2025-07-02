@@ -1,10 +1,31 @@
 import pandas as pd
 
-def get_pictures(conn):
-    return pd.read_sql('''
+def get_pictures(conn, search_query=None, page=None, elements=None):
+    offset = 0
+    if page is not None and elements is not None:
+        offset = (page - 1) * elements
+
+    query = '''
         SELECT picture_id, picture_base64
         FROM pictures
-    ''', conn)
+    '''
+
+    if search_query:
+        query += f'''
+            WHERE picture_id LIKE '%{search_query}%'
+        '''
+
+    query += '''
+        ORDER BY picture_id
+    '''
+
+    if elements is not None:
+        query += f' LIMIT {elements} OFFSET {offset}'
+
+    pictures = pd.read_sql(query, conn)
+
+    return pictures
+
 
 def get_one_picture(conn, user_picture_id):
     return pd.read_sql(f'''

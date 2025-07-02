@@ -47,12 +47,29 @@ coord_list_example = [
                 }
             }
         }
+    },
+    400: {
+        "description": "Invalid input parameters",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: недопустимые параметры пагинации или поиска."}
+            }
+        }
     }
 })
-async def coords_get_select_all():
-    """Описание: получение данных обо всех координатах."""
+async def coords_get_select_all(
+    search_query: str | None = None,
+    page: int | None = None,
+    elements: int | None = None
+):
+    """Описание: получение данных обо всех координатах с поддержкой пагинации и поиска."""
+    if page is not None and page < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: номер страницы должен быть положительным числом.")
+    if elements is not None and elements < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: количество объектов на странице должно быть положительным числом.")
+
     conn = get_db_connection()
-    x = get_coords(conn)
+    x = get_coords(conn, search_query, page, elements)
     return Response(
         json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace("NaN", "null"),
         status_code=200
@@ -127,11 +144,29 @@ async def coords_delete(coord_id: int,
                 "example": {"message": "Координата создана."}
             }
         }
+    },
+    400: {
+        "description": "Invalid input parameters",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: недопустимые значения координат."}
+            }
+        }
     }
 })
-async def coords_insert(coord_x: float, coord_y: float, territorie_id: int, order: int,
-    current_user: dict = Depends(get_current_active_admin_user)):
+async def coords_insert(
+    coord_x: float,
+    coord_y: float,
+    territorie_id: int,
+    order: int,
+    current_user: dict = Depends(get_current_active_admin_user)
+):
     """Описание: добавление координаты. На ввод подаются координаты X, Y, идентификатор территории и порядок."""
+    if (coord_x is not None) and ((coord_x < -90) or (coord_x > 90)):
+        raise HTTPException(status_code=400, detail="Ошибка: координата X (широта) должна быть в интервале [-90; 90].")
+    if (coord_y is not None) and ((coord_y <= -180) or (coord_y > 180)):
+        raise HTTPException(status_code=400, detail="Ошибка: координата Y (долгота) должна быть в интервале (-180; 180].")
+
     conn = get_db_connection()
     x = insert_coord(conn, coord_x, coord_y, territorie_id, order)
     return Response("{'message':'Координата создана.'}", status_code=200)
@@ -144,11 +179,30 @@ async def coords_insert(coord_x: float, coord_y: float, territorie_id: int, orde
                 "example": {"message": "Координата обновлена."}
             }
         }
+    },
+    400: {
+        "description": "Invalid input parameters",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: недопустимые значения координат."}
+            }
+        }
     }
 })
-async def coords_update(coord_id: int, coord_x: float, coord_y: float, territorie_id: int, order: int,
-    current_user: dict = Depends(get_current_active_admin_user)):
+async def coords_update(
+    coord_id: int,
+    coord_x: float | None = None,
+    coord_y: float | None = None,
+    territorie_id: int | None = None,
+    order: int | None = None,
+    current_user: dict = Depends(get_current_active_admin_user)
+):
     """Описание: изменение параметров координаты. На ввод подаются идентификатор, координаты X, Y, идентификатор территории и порядок."""
+    if (coord_x is not None) and ((coord_x < -90) or (coord_x > 90)):
+        raise HTTPException(status_code=400, detail="Ошибка: координата X (широта) должна быть в интервале [-90; 90].")
+    if (coord_y is not None) and ((coord_y <= -180) or (coord_y > 180)):
+        raise HTTPException(status_code=400, detail="Ошибка: координата Y (долгота) должна быть в интервале (-180; 180].")
+
     conn = get_db_connection()
     x = update_coord(conn, coord_id, coord_x, coord_y, territorie_id, order)
     return Response("{'message':'Координата обновлена.'}", status_code=200)

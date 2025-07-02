@@ -56,16 +56,35 @@ ground_list_example = [
                 }
             }
         }
+    },
+    400: {
+        "description": "Invalid input parameters",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: недопустимые параметры пагинации или поиска."}
+            }
+        }
     }
 })
-async def grounds_get_select_all(is_need_pictures: bool = False):
-    """Описание: получение данных обо всех грунтах."""
+async def grounds_get_select_all(
+    is_need_pictures: bool = False,
+    search_query: str | None = None,
+    page: int | None = None,
+    elements: int | None = None
+):
+    """Описание: получение данных обо всех грунтах с поддержкой пагинации и поиска."""
+    if page is not None and page < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: номер страницы должен быть положительным числом.")
+    if elements is not None and elements < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: количество объектов на странице должно быть положительным числом.")
+
     conn = get_db_connection()
-    x = get_grounds(conn, is_need_pictures)
+    x = get_grounds(conn, is_need_pictures, search_query, page, elements)
     return Response(
-        json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False),
+        json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace("NaN", "null"),
         status_code=200
     )
+
 
 @router.get("/grounds/one", tags=["GroundController"], responses={
     200: {
@@ -187,8 +206,6 @@ async def grounds_insert(ground_name: str, ground_description: str | None = None
         raise HTTPException(status_code=400, detail="Ошибка: влажность должна быть больше 0.")
     if ground_solidity is not None and ground_solidity < 0:
         raise HTTPException(status_code=400, detail="Ошибка: твердость должна быть больше 0.")
-    if ground_picture_id is not None and ground_picture_id < 0:
-        raise HTTPException(status_code=400, detail="Ошибка: идентификатор картинки должен быть больше 0.")
     if len(find_ground_name(conn, ground_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = insert_ground(conn, ground_name, ground_description, ground_density, ground_humidity, ground_solidity, ground_picture_id)
@@ -253,8 +270,6 @@ async def grounds_update(ground_id: int, ground_name: str | None = None, ground_
         raise HTTPException(status_code=400, detail="Ошибка: влажность должна быть больше 0.")
     if ground_solidity is not None and ground_solidity < 0:
         raise HTTPException(status_code=400, detail="Ошибка: твердость должна быть больше 0.")
-    if ground_picture_id is not None and ground_picture_id < 0:
-        raise HTTPException(status_code=400, detail="Ошибка: идентификатор картинки должен быть больше 0.")
     if len(find_ground_name_with_id(conn, ground_id, ground_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = update_ground(conn, ground_id, ground_name, ground_description, ground_density, ground_humidity, ground_solidity, ground_picture_id)

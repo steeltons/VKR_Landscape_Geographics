@@ -4,9 +4,9 @@ from jose import jwt
 from passlib.context import CryptContext
 
 # Настройки безопасности
-SECRET_KEY = "your-secret-key"  # Замените на ваш секретный ключ
+SECRET_KEY = "amogus"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 300
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

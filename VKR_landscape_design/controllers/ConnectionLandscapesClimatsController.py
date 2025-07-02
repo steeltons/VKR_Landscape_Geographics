@@ -41,16 +41,34 @@ connection_landscape_climat_list_example = [
                 }
             }
         }
+    },
+    400: {
+        "description": "Invalid input parameters",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: недопустимые параметры пагинации или поиска."}
+            }
+        }
     }
 })
-async def connections_landscapes_climats_get_select_all():
-    """Описание: получение данных обо всех связях ландшафтов и климатов."""
+async def connections_landscapes_climats_get_select_all(
+    search_query: str | None = None,
+    page: int | None = None,
+    elements: int | None = None
+):
+    """Описание: получение данных обо всех связях ландшафтов и климатов с поддержкой пагинации и поиска."""
+    if page is not None and page < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: номер страницы должен быть положительным числом.")
+    if elements is not None and elements < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: количество объектов на странице должно быть положительным числом.")
+
     conn = get_db_connection()
-    x = get_connections_landscapes_climats(conn)
+    x = get_connections_landscapes_climats(conn, search_query, page, elements)
     return Response(
         json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace("NaN", "null"),
         status_code=200
     )
+
 
 @router.get("/connections_landscapes_climats/one", tags=["ConnectionLandscapesClimatsController"], responses={
     200: {

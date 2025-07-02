@@ -1,9 +1,25 @@
 import pandas as pd
 
-def get_soils(conn, is_need_pictures=False):
-    soils = pd.read_sql('''
-        SELECT * FROM soils
-    ''', conn)
+def get_soils(conn, is_need_pictures=False, search_query=None, page=None, elements=None):
+    offset = 0
+    if page is not None and elements is not None:
+        offset = (page - 1) * elements
+
+    query = '''
+        SELECT * FROM soils 
+        ORDER BY soil_name ASC
+    '''
+
+    if search_query:
+        query += f'''
+            WHERE soil_name LIKE '%{search_query}%'
+            OR soil_description LIKE '%{search_query}%'
+        '''
+
+    if elements is not None:
+        query += f' LIMIT {elements} OFFSET {offset}'
+
+    soils = pd.read_sql(query, conn)
 
     if is_need_pictures:
         for index, row in soils.iterrows():
@@ -18,6 +34,7 @@ def get_soils(conn, is_need_pictures=False):
                 soils.at[index, 'soil_picture_base64'] = None
 
     return soils
+
 
 def get_one_soil(conn, user_soil_id, is_need_pictures=False):
     soil = pd.read_sql(f'''

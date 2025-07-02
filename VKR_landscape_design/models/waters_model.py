@@ -1,9 +1,25 @@
 import pandas as pd
 
-def get_waters(conn, is_need_pictures=False):
-    waters = pd.read_sql('''
-        SELECT * FROM waters
-    ''', conn)
+def get_waters(conn, is_need_pictures=False, search_query=None, page=None, elements=None):
+    offset = 0
+    if page is not None and elements is not None:
+        offset = (page - 1) * elements
+
+    query = '''
+        SELECT * FROM waters 
+        ORDER BY water_name ASC
+    '''
+
+    if search_query:
+        query += f'''
+            WHERE water_name LIKE '%{search_query}%'
+            OR water_description LIKE '%{search_query}%'
+        '''
+
+    if elements is not None:
+        query += f' LIMIT {elements} OFFSET {offset}'
+
+    waters = pd.read_sql(query, conn)
 
     if is_need_pictures:
         for index, row in waters.iterrows():
@@ -18,6 +34,7 @@ def get_waters(conn, is_need_pictures=False):
                 waters.at[index, 'water_picture_base64'] = None
 
     return waters
+
 
 def get_one_water(conn, user_water_id, is_need_pictures=False):
     water = pd.read_sql(f'''

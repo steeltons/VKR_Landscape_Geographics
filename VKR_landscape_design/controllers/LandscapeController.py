@@ -22,6 +22,30 @@ landscape_example = {
     "landscape_picture_base64": "base64_encoded_string_for_landscape"
 }
 
+landscape_list_example = [
+    {
+        "landscape_id": 1,
+        "landscape_name": "Лес",
+        "landscape_code": "FOR",
+        "landscape_description": "Описание леса",
+        "landscape_area_in_square_kilometers": 100.5,
+        "landscape_area_in_percents": 10.5,
+        "landscape_KR": 0.7,
+        "landscape_picture_id": 1,
+        "landscape_picture_base64": "base64_encoded_string_for_landscape"
+    },
+    {
+        "landscape_id": 2,
+        "landscape_name": "Пустыня",
+        "landscape_code": "FOR",
+        "landscape_description": "Описание пустыни",
+        "landscape_area_in_square_kilometers": 100.5,
+        "landscape_area_in_percents": 10.5,
+        "landscape_KR": 0.7,
+        "landscape_picture_id": 1,
+        "landscape_picture_base64": "base64_encoded_string_for_landscape"
+    }
+]
 
 @router.get("/landscapes/all", tags=["LandscapeController"], responses={
     200: {
@@ -30,21 +54,40 @@ landscape_example = {
             "application/json": {
                 "examples": {
                     "Example response with pictures": {
-                        "value": [landscape_example]
+                        "value": landscape_list_example
                     }
                 }
             }
         }
+    },
+    400: {
+        "description": "Invalid input parameters",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: недопустимые параметры пагинации или поиска."}
+            }
+        }
     }
 })
-async def landscapes_get_select_all(is_need_pictures: bool = False):
-    """Описание: получение данных обо всех ландшафтах."""
+async def landscapes_get_select_all(
+    is_need_pictures: bool = False,
+    search_query: str | None = None,
+    page: int | None = None,
+    elements: int | None = None
+):
+    """Описание: получение данных обо всех ландшафтах с поддержкой пагинации и поиска."""
+    if page is not None and page < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: номер страницы должен быть положительным числом.")
+    if elements is not None and elements < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: количество объектов на странице должно быть положительным числом.")
+
     conn = get_db_connection()
-    x = get_landscapes(conn, is_need_pictures)
+    x = get_landscapes(conn, is_need_pictures, search_query, page, elements)
     return Response(
         json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace("NaN", "null"),
         status_code=200
     )
+
 
 @router.get("/landscapes/one", tags=["LandscapeController"], responses={
     200: {
@@ -152,8 +195,6 @@ async def landscapes_insert(landscape_name: str, landscape_code: str | None = No
         raise HTTPException(status_code=400, detail="Ошибка: площадь в процентах должна быть больше 0.")
     if landscape_KR is not None and landscape_KR < 0:
         raise HTTPException(status_code=400, detail="Ошибка: КР должна быть больше 0.")
-    if landscape_picture_id is not None and landscape_picture_id < 0:
-        raise HTTPException(status_code=400, detail="Ошибка: идентификатор картинки должен быть больше 0.")
     if len(find_landscape_name(conn, landscape_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = insert_landscape(conn, landscape_name, landscape_code, landscape_description, landscape_area_in_square_kilometers, landscape_area_in_percents, landscape_KR, landscape_picture_id)
@@ -223,8 +264,6 @@ async def landscapes_update(landscape_id: int, landscape_name: str | None = None
         raise HTTPException(status_code=400, detail="Ошибка: площадь в процентах должна быть больше 0.")
     if landscape_KR is not None and landscape_KR < 0:
         raise HTTPException(status_code=400, detail="Ошибка: КР должна быть больше 0.")
-    if landscape_picture_id is not None and landscape_picture_id < 0:
-        raise HTTPException(status_code=400, detail="Ошибка: идентификатор картинки должен быть больше 0.")
     if len(find_landscape_name_with_id(conn, landscape_id, landscape_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = update_landscape(conn, landscape_id, landscape_name, landscape_code, landscape_description, landscape_area_in_square_kilometers, landscape_area_in_percents, landscape_KR, landscape_picture_id)

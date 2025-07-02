@@ -56,16 +56,35 @@ soil_list_example = [
                 }
             }
         }
+    },
+    400: {
+        "description": "Invalid input parameters",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: недопустимые параметры пагинации или поиска."}
+            }
+        }
     }
 })
-async def soils_get_select_all(is_need_pictures: bool = False):
-    """Описание: получение данных обо всех почвах."""
+async def soils_get_select_all(
+    is_need_pictures: bool = False,
+    search_query: str | None = None,
+    page: int | None = None,
+    elements: int | None = None
+):
+    """Описание: получение данных обо всех почвах с поддержкой пагинации и поиска."""
+    if page is not None and page < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: номер страницы должен быть положительным числом.")
+    if elements is not None and elements < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: количество объектов на странице должно быть положительным числом.")
+
     conn = get_db_connection()
-    x = get_soils(conn, is_need_pictures)
+    x = get_soils(conn, is_need_pictures, search_query, page, elements)
     return Response(
         json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace("NaN", "null"),
         status_code=200
     )
+
 
 @router.get("/soils/one", tags=["SoilController"], responses={
     200: {
@@ -190,8 +209,6 @@ async def soils_insert(soil_name: str, soil_description: str | None = None, soil
         raise HTTPException(status_code=400, detail="Ошибка: длина минералов должна быть меньше или равна 3000 символов.")
     if soil_profile is not None and len(soil_profile) > 3000:
         raise HTTPException(status_code=400, detail="Ошибка: длина профиля должна быть меньше или равна 3000 символов.")
-    if soil_picture_id is not None and soil_picture_id < 0:
-        raise HTTPException(status_code=400, detail="Ошибка: идентификатор картинки должен быть больше 0.")
     if len(find_soil_name(conn, soil_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = insert_soil(conn, soil_name, soil_description, soil_acidity, soil_minerals, soil_profile, soil_picture_id)
@@ -256,8 +273,6 @@ async def soils_update(soil_id: int, soil_name: str | None = None, soil_descript
         raise HTTPException(status_code=400, detail="Ошибка: длина минералов должна быть меньше или равна 3000 символов.")
     if soil_profile is not None and len(soil_profile) > 3000:
         raise HTTPException(status_code=400, detail="Ошибка: длина профиля должна быть меньше или равна 3000 символов.")
-    if soil_picture_id is not None and soil_picture_id < 0:
-        raise HTTPException(status_code=400, detail="Ошибка: идентификатор картинки должен быть больше 0.")
     if len(find_soil_name_with_id(conn, soil_id, soil_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = update_soil(conn, soil_id, soil_name, soil_description, soil_acidity, soil_minerals, soil_profile, soil_picture_id)

@@ -41,16 +41,34 @@ connection_landscape_water_list_example = [
                 }
             }
         }
+    },
+    400: {
+        "description": "Invalid input parameters",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Ошибка: недопустимые параметры пагинации или поиска."}
+            }
+        }
     }
 })
-async def connections_landscapes_waters_get_select_all():
-    """Описание: получение данных обо всех связях ландшафтов и вод."""
+async def connections_landscapes_waters_get_select_all(
+    search_query: str | None = None,
+    page: int | None = None,
+    elements: int | None = None
+):
+    """Описание: получение данных обо всех связях ландшафтов и вод с поддержкой пагинации и поиска."""
+    if page is not None and page < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: номер страницы должен быть положительным числом.")
+    if elements is not None and elements < 1:
+        raise HTTPException(status_code=400, detail="Ошибка: количество объектов на странице должно быть положительным числом.")
+
     conn = get_db_connection()
-    x = get_connections_landscapes_waters(conn)
+    x = get_connections_landscapes_waters(conn, search_query, page, elements)
     return Response(
         json.dumps(x.to_dict(orient="records"), indent=2, ensure_ascii=False).replace("NaN", "null"),
         status_code=200
     )
+
 
 @router.get("/connections_landscapes_waters/one", tags=["ConnectionLandscapesWatersController"], responses={
     200: {

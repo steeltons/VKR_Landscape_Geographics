@@ -1,7 +1,9 @@
 import sqlite3
 import pandas as pd
+from passlib.context import CryptContext
 
 # PRAGMA FOREIGN_KEYS = on;
+
 
 con = sqlite3.connect("VKR.sqlite")
 
@@ -24,7 +26,10 @@ CREATE TABLE IF NOT EXISTS users(
 CREATE TABLE IF NOT EXISTS territories(
     territorie_id INTEGER PRIMARY KEY AUTOINCREMENT,
     territorie_landscape_id INTEGER,
-    territorie_description VARCHAR
+    territorie_description VARCHAR,
+    territorie_color_r INTEGER,
+    territorie_color_g INTEGER,
+    territorie_color_b INTEGER
  );
  
  
@@ -166,16 +171,17 @@ CREATE TABLE IF NOT EXISTS connections_landscapes_climats(
 
 INSERT INTO users (user_login, user_password, user_email, user_surname, user_name, user_fathername, user_age, user_is_female, user_is_admin, user_picture_id)
 VALUES
-('root', '63a9f0ea7bb98050796b649e85481845', 'superadmin@yandex.ru', 'Иванов', 'Пётр', 'Сидорович', 23, 0, 'true', 1), 
-('vanek2002', 'd5170a3e24af791ba3d674760619fcd9', 'vanya@yandex.ru', 'Иванов', 'Иван', 'Иванович', 32, 0, null, 2), 
-('petrpervuy', 'bd51439026569fb110a08d5439f6b511', 'petrpervuy@gmail.com', 'Петров', 'Пётр', 'Петрович', 19, 0, null, 3),  
-('mashapupkina', '41890cd2ac71e06b5f2c9ad5ccc07b45', 'pupkinama@gmail.com', 'Пупкина', 'Мария', 'Игоревна', 24, 1, null, 4), 
-('lutiysidor', '9c1e4c1f8b81816130308604e102fd7c', 'supersid@mail.ru', 'Сидоров', 'Сидор', 'Сидорович', 25, 0, 'true', 5); 
+('root', '$2b$12$lmgd4.BgpQr8w76p5Kcpueis4yNWLqpmxXinAr62yKqLrwsvO5cKu', 'superadmin@yandex.ru', 'Иванов', 'Пётр', 'Сидорович', 23, 0, 'true', 1), 
+('vanek2002', '$2b$12$xnDJi2tMww9CtJ9Iv3571.CiAq47eEajCt6KfeYdqPqyHU0Avo1dW', 'vanya@yandex.ru', 'Иванов', 'Иван', 'Иванович', 32, 0, null, 2), 
+('petrpervuy', '$2b$12$xnDJi2tMww9CtJ9Iv3571.CiAq47eEajCt6KfeYdqPqyHU0Avo1dW', 'petrpervuy@gmail.com', 'Петров', 'Пётр', 'Петрович', 19, 0, null, 3),  
+('mashapupkina', '$2b$12$xnDJi2tMww9CtJ9Iv3571.CiAq47eEajCt6KfeYdqPqyHU0Avo1dW', 'pupkinama@gmail.com', 'Пупкина', 'Мария', 'Игоревна', 24, 1, null, 4),
+('lutiysidor', '$2b$12$xnDJi2tMww9CtJ9Iv3571.CiAq47eEajCt6KfeYdqPqyHU0Avo1dW', 'supersid@mail.ru', 'Сидоров', 'Сидор', 'Сидорович', 25, 0, 'true', 5),  
+('q', '$2b$12$xDg2cp6GCE4AMEj4v43OxuHHafs.Ng4VFqcnwF3nmdPBXLf5ln7E6', 'q@mail.ru', 'Иванов', 'Пётр', 'Сидорович', 28, 0, 'true', 6); 
 
-INSERT INTO territories (territorie_landscape_id, territorie_description)
+INSERT INTO territories (territorie_landscape_id, territorie_description, territorie_color_r, territorie_color_g, territorie_color_b)
 VALUES
-(1, 'Территория возле Владивостока'),
-(2, 'Ещё одна территория возле Владивостока');
+(1, 'Территория возле Владивостока', 134, 68, 198),
+(2, 'Ещё одна территория возле Владивостока', 159, 217, 36);
 
 INSERT INTO coords (coords_coord_x, coords_coord_y, coords_territorie_id, coords_order)
 VALUES
@@ -301,7 +307,16 @@ VALUES
 
  ''')
 
+
+
 con.commit()
 
+# Настоящие (расшифрованные) пароли:
+# Логин "root"           - Пароль "root"
+# Логин "vanek2002"      - Пароль "123"
+# Логин "petrpervuy"     - Пароль "123"
+# Логин "mashapupkina"   - Пароль "123"
+# Логин "lutiysidor"     - Пароль "123"
+# Логин "q"              - Пароль "q"
 
 cursor = con.cursor()
