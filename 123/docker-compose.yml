@@ -1,0 +1,12 @@
+services:
+  uvicorn:
+    build: ./VKR_landscape_design
+    container_name: backend-VKR-landscape-design
+    environment:
+      - PYTHONUNBUFFERED=True 
+    restart: on-failure
+    volumes:
+      - ./VKR_landscape_design:/VKR_landscape_design
+    ports:
+      - "8000:8000"
+    command: uvicorn main:app

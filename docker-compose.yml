@@ -1,0 +1,10 @@
+version: '3.12'
+
+services:
+  web:
+    build: ./VKR_landscape_design
+    command: uvicorn main:app --host 0.0.0.0
+    volumes:
+      - .:/main
+    ports:
+      - 8000:8000
