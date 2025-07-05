@@ -9,6 +9,8 @@ from typing import Optional
 from models.users_model import *
 from utils import get_db_connection
 from auth import create_access_token, verify_password, SECRET_KEY, ALGORITHM
+import smtplib
+
 
 router = APIRouter()
 security = HTTPBearer()

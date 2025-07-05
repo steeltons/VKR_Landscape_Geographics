@@ -157,6 +157,8 @@ async def pictures_insert(picture_base64: str,
     conn = get_db_connection()
     if len(picture_base64) == 0:
         raise HTTPException(status_code=400, detail="Ошибка: строка base64 не должна быть пустой.")
+    if len(picture_base64) > 1500000:
+        raise HTTPException(status_code=400, detail="Ошибка: строка base64 не должна превышать 1500000 символов.")
     x = insert_picture(conn, picture_base64)
     return Response("{'message':'Картинка создана.'}", status_code=200)
 
