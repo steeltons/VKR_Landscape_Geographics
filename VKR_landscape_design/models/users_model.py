@@ -74,6 +74,20 @@ def find_user_login_with_id(conn, user_id, user_login):
         WHERE user_login = "{user_login}" AND user_id != {user_id}
     ''', conn)
 
+def find_user_email(conn, user_email):
+    return pd.read_sql(f'''
+        SELECT user_id
+        FROM users
+        WHERE user_email = "{user_email}"
+    ''', conn)
+
+def find_user_email_with_id(conn, user_id, user_email):
+    return pd.read_sql(f'''
+        SELECT user_id
+        FROM users
+        WHERE user_email = "{user_email}" AND user_id != {user_id}
+    ''', conn)
+
 def delete_user(conn, user_id):
     cur = conn.cursor()
     cur.execute('''
