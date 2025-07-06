@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from utils import get_db_connection
 from controllers.UserController import get_current_active_admin_user
+from starlette.responses import JSONResponse
+
 
 router = APIRouter()
 security = HTTPBearer()
@@ -212,7 +214,7 @@ async def soils_insert(soil_name: str, soil_description: str | None = None, soil
     if len(find_soil_name(conn, soil_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = insert_soil(conn, soil_name, soil_description, soil_acidity, soil_minerals, soil_profile, soil_picture_id)
-    return Response("{'message':'Почва создана.'}", status_code=200)
+    return JSONResponse(content={'message' : 'Почва создана'}, status_code=200)
 
 @router.patch("/soils/update", tags=["SoilController"], responses={
     200: {
@@ -276,4 +278,4 @@ async def soils_update(soil_id: int, soil_name: str | None = None, soil_descript
     if len(find_soil_name_with_id(conn, soil_id, soil_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = update_soil(conn, soil_id, soil_name, soil_description, soil_acidity, soil_minerals, soil_profile, soil_picture_id)
-    return Response("{'message':'Почва обновлена.'}", status_code=200)
+    return JSONResponse(content={'message' : 'Почва обнвлена'}, status_code=200)

@@ -502,7 +502,7 @@ async def get_related_objects_for_point(point_x: float, point_y: float, is_need_
         if is_inside:
             territorie_ids.append(territorie_id)
     if not territorie_ids:
-        return {"message": "Точка не принадлежит ни одной территории."}
+        raise HTTPException(status_code=404, detail="Точка не принадлежит ни одной территории.")
     result = []
     for territorie_id in territorie_ids:
         territorie_data = get_territorie_with_related_objects(conn, territorie_id, is_need_pictures)

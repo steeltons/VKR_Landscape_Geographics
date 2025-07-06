@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Response, HTTPException
 import json
 from models.picture_model import *
-from utils import get_db_connection
+from fastapi import UploadFile, File, HTTPException, Depends
+from fastapi.responses import JSONResponse
+import base64
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from utils import get_db_connection
 from controllers.UserController import get_current_active_admin_user
+from fastapi import Path
 
 router = APIRouter()
 security = HTTPBearer()
@@ -68,7 +71,8 @@ async def pictures_get_select_all(
 
 
 
-@router.get("/pictures/one", tags=["PictureController"], responses={
+
+@router.get("/pictures/{picture_id}", tags=["PictureController"], responses={
     200: {
         "description": "Successful Response",
         "content": {
@@ -90,7 +94,7 @@ async def pictures_get_select_all(
         }
     }
 })
-async def pictures_get_one_picture(picture_id: int):
+async def pictures_get_one_picture(picture_id: int = Path(..., description="ID картинки")):
     """Описание: получение данных об одной картинке по её идентификатору."""
     conn = get_db_connection()
     x = get_one_picture(conn, picture_id)
@@ -161,6 +165,44 @@ async def pictures_insert(picture_base64: str,
         raise HTTPException(status_code=400, detail="Ошибка: строка base64 не должна превышать 1500000 символов.")
     x = insert_picture(conn, picture_base64)
     return Response("{'message':'Картинка создана.'}", status_code=200)
+
+@router.post("/pictures", tags=["PictureController"], responses={
+    200: {
+        "description": "Picture uploaded successfully",
+        "content": {
+            "application/json": {
+                "example": {"id": 1, "message": "Картинка создана."}
+            }
+        }
+    },
+    400: {
+        "description": "Invalid input data",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "No file": {
+                        "value": {"detail": "Файл изображения не был передан."}
+                    }
+                }
+            }
+        }
+    }
+})
+async def pictures_insert(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_active_admin_user)
+):
+    """Добавление картинки. Принимает файл изображения и сохраняет в базу."""
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Файл изображения не был передан.")
+
+    base64_image = base64.b64encode(content).decode("utf-8")
+
+    conn = get_db_connection()
+    pic_id = insert_picture(conn, base64_image)
+
+    return JSONResponse(status_code=200, content={"id": pic_id, "message": "Картинка создана."})
 
 @router.patch("/pictures/update", tags=["PictureController"], responses={
     200: {

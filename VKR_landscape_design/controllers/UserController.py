@@ -10,6 +10,7 @@ from models.users_model import *
 from utils import get_db_connection
 from auth import create_access_token, verify_password, SECRET_KEY, ALGORITHM
 import smtplib
+from starlette.responses import JSONResponse
 
 
 router = APIRouter()
@@ -364,35 +365,28 @@ async def users_insert(
     if user_login is not None and len(user_login) < 3:
         raise HTTPException(status_code=400, detail="Ошибка: логин пользователя должен быть не менее 3 символов.")
     if user_login is not None and len(user_login) > 30:
-        raise HTTPException(status_code=400, detail="Ошибка: логин пользователя должен быть не более 30 символов.")
-    if user_password is not None and len(user_password) < 4:
-        raise HTTPException(status_code=400, detail="Ошибка: пароль пользователя должен быть не менее 4 символов.")
-    if user_password is not None and len(user_password) > 30:
-        raise HTTPException(status_code=400, detail="Ошибка: пароль пользователя должен быть не более 30 символов.")
+        raise HTTPException(status_code=400, detail="Ошибка: длина логина должна быть меньше или равна 30 символов.")
+    if user_password is not None and len(user_password) < 6:
+        raise HTTPException(status_code=400, detail="Ошибка: пароль пользователя должен быть не менее 6 символов.")
     if user_email is not None and len(user_email) == 0:
         raise HTTPException(status_code=400, detail="Ошибка: email пользователя не должен быть пустым.")
-    if user_email is not None and not ("@" in user_email):
-        raise HTTPException(status_code=400, detail="Ошибка: email пользователя должен содержать символ '@'")
     if user_surname is not None and len(user_surname) > 30:
         raise HTTPException(status_code=400, detail="Ошибка: длина фамилии должна быть меньше или равна 30 символов.")
     if user_name is not None and len(user_name) > 30:
         raise HTTPException(status_code=400, detail="Ошибка: длина имени должна быть меньше или равна 30 символов.")
     if user_fathername is not None and len(user_fathername) > 30:
         raise HTTPException(status_code=400, detail="Ошибка: длина отчества должна быть меньше или равна 30 символов.")
-    if user_age is not None and (user_age < 3 or user_age > 120):
-        raise HTTPException(status_code=400, detail="Ошибка: возраст должен быть от 3 до 120.")
-    if user_is_female is not None and (user_is_female < 0 or user_is_female > 1):
-        raise HTTPException(status_code=400, detail="Ошибка: пол должен быть либо мужским, либо женским")
+    if user_age is not None and user_age < 0:
+        raise HTTPException(status_code=400, detail="Ошибка: возраст должен быть больше 0.")
+    if user_picture_id is not None and user_picture_id < 0:
+        raise HTTPException(status_code=400, detail="Ошибка: идентификатор картинки должен быть больше 0.")
 
     if len(find_user_login(conn, user_login)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: логин должен быть уникальным (повторы не допускаются).")
 
-    if len(find_user_email(conn, user_email)) != 0:
-        raise HTTPException(status_code=400, detail="Ошибка: электронная почта должна быть уникальной (повторы не допускаются).")
-
     hashed_password = get_password_hash(user_password)
     x = insert_user(conn, user_login, hashed_password, user_email, user_surname, user_name, user_fathername, user_age, user_is_female, user_picture_id)
-    return Response("{'message':'Пользователь создан.'}", status_code=200)
+    return JSONResponse(content={'message': 'Пользователь создан.'}, status_code=200)
 
 @router.patch("/users/update", tags=["UserController"], responses={
     200: {
@@ -472,34 +466,25 @@ async def users_update(
         )
 
     conn = get_db_connection()
-    if user_login is not None and len(user_login) < 3:
+    if user_login is not None and len(user_login) >= 3:
         raise HTTPException(status_code=400, detail="Ошибка: логин пользователя должен быть не менее 3 символов.")
     if user_login is not None and len(user_login) > 30:
-        raise HTTPException(status_code=400, detail="Ошибка: логин пользователя должен быть не более 30 символов.")
-    if user_password is not None and len(user_password) < 4:
-        raise HTTPException(status_code=400, detail="Ошибка: пароль пользователя должен быть не менее 4 символов.")
-    if user_password is not None and len(user_password) > 30:
-        raise HTTPException(status_code=400, detail="Ошибка: пароль пользователя должен быть не более 30 символов.")
+        raise HTTPException(status_code=400, detail="Ошибка: длина логина должна быть меньше или равна 30 символов.")
+    if user_password is not None and len(user_password) >= 6:
+        raise HTTPException(status_code=400, detail="Ошибка: пароль пользователя должен быть не менее 6 символов.")
     if user_email is not None and len(user_email) == 0:
         raise HTTPException(status_code=400, detail="Ошибка: email пользователя не должен быть пустым.")
-    if user_email is not None and not ("@" in user_email):
-        raise HTTPException(status_code=400, detail="Ошибка: email пользователя должен содержать символ '@'")
     if user_surname is not None and len(user_surname) > 30:
         raise HTTPException(status_code=400, detail="Ошибка: длина фамилии должна быть меньше или равна 30 символов.")
     if user_name is not None and len(user_name) > 30:
         raise HTTPException(status_code=400, detail="Ошибка: длина имени должна быть меньше или равна 30 символов.")
     if user_fathername is not None and len(user_fathername) > 30:
         raise HTTPException(status_code=400, detail="Ошибка: длина отчества должна быть меньше или равна 30 символов.")
-    if user_age is not None and (user_age < 3 or user_age > 120):
-        raise HTTPException(status_code=400, detail="Ошибка: возраст должен быть от 3 до 120.")
-    if user_is_female is not None and (user_is_female < 0 or user_is_female > 1):
-        raise HTTPException(status_code=400, detail="Ошибка: пол должен быть либо мужским, либо женским")
+    if user_age is not None and user_age < 0:
+        raise HTTPException(status_code=400, detail="Ошибка: возраст должен быть больше 0.")
 
     if len(find_user_login_with_id(conn, user_id, user_login)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: логин должен быть уникальным (повторы не допускаются).")
-
-    if len(find_user_email_with_id(conn, user_id, user_email)) != 0:
-        raise HTTPException(status_code=400, detail="Ошибка: электронная почта должна быть уникальной (повторы не допускаются).")
 
     y = get_one_user(conn, user_id)
     if len(y) == 0:
@@ -507,7 +492,7 @@ async def users_update(
 
     hashed_password = get_password_hash(user_password) if user_password else None
     x = update_user(conn, user_id, user_login, hashed_password, user_email, user_surname, user_name, user_fathername, user_age, user_is_female, user_picture_id)
-    return Response("{'message':'Пользователь обновлён.'}", status_code=200)
+    return JSONResponse(content={'message': 'Пользователь обновлён.'}, status_code=200)
 
 @router.patch("/users/{user_id}/set-admin", tags=["UserController"], responses={
     200: {
