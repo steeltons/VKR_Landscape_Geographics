@@ -7,7 +7,7 @@ import base64
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from utils import get_db_connection
-from controllers.UserController import get_current_active_admin_user
+from controllers.UserController import get_current_user, get_current_active_admin_user
 from fastapi import Path
 
 router = APIRouter()
@@ -187,7 +187,7 @@ async def pictures_insert(picture_base64: str):
         }
     }
 })
-async def pictures_insert(file: UploadFile = File(...),):
+async def pictures_insert(file: UploadFile = File(...)):
     """Добавление картинки. Принимает файл изображения и сохраняет в базу."""
     content = await file.read()
     if not content:
