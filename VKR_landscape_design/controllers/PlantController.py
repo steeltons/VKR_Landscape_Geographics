@@ -1,11 +1,16 @@
 from fastapi import APIRouter, Response, HTTPException
 import json
+
+from starlette.responses import JSONResponse
+
 from models.plants_model import *
 from utils import get_db_connection
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from utils import get_db_connection
 from controllers.UserController import get_current_active_admin_user
+from pydantic import BaseModel
+from fastapi import Body
 
 router = APIRouter()
 security = HTTPBearer()
@@ -138,6 +143,11 @@ async def plants_delete(plant_id: int,
     x = delete_plant(conn, plant_id)
     return Response("{'message':'Растение удалено.'}", status_code=200)
 
+class PlantInsertDto(BaseModel):
+    plant_name: str
+    plant_description: str | None = None
+    plant_picture_id: int | None = None
+
 @router.post("/plants/insert", tags=["PlantController"], responses={
     200: {
         "description": "Plant created successfully",
@@ -172,20 +182,20 @@ async def plants_delete(plant_id: int,
         }
     }
 })
-async def plants_insert(plant_name: str, plant_description: str | None = None, plant_picture_id: int | None = None,
-    current_user: dict = Depends(get_current_active_admin_user)):
-    """Описание: добавление растения. На ввод подаются название, описание и идентификатор картинки."""
+async def plants_insert(plant_data: PlantInsertDto = Body(...)):
+    """Добавление растения через тело запроса."""
     conn = get_db_connection()
-    if plant_name is not None and len(plant_name) == 0:
-        raise HTTPException(status_code=400, detail="Ошибка: название растения не должно быть пустым.")
-    if plant_name is not None and len(plant_name) > 30:
-        raise HTTPException(status_code=400, detail="Ошибка: длина названия должна быть меньше или равна 30 символов.")
-    if plant_description is not None and len(plant_description) > 3000:
-        raise HTTPException(status_code=400, detail="Ошибка: длина описания должна быть меньше или равна 3000 символов.")
-    if len(find_plant_name(conn, plant_name)) != 0:
-        raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
-    x = insert_plant(conn, plant_name, plant_description, plant_picture_id)
-    return Response("{'message':'Растение создано.'}", status_code=200)
+    if not plant_data.plant_name:
+        raise HTTPException(status_code=400, detail=__create_error_message("Ошибка: название растения не должно быть пустым."))
+    if len(plant_data.plant_name) > 30:
+        raise HTTPException(status_code=400, detail=__create_error_message("Ошибка: длина названия должна быть меньше или равна 30 символов."))
+    if plant_data.plant_description and len(plant_data.plant_description) > 3000:
+        raise HTTPException(status_code=400, detail=__create_error_message("Ошибка: длина описания должна быть меньше или равна 3000 символов."))
+    if len(find_plant_name(conn, plant_data.plant_name)) != 0:
+        raise HTTPException(status_code=400, detail=__create_error_message("Ошибка: название должно быть уникальным (повторы не допускаются)."))
+
+    insert_plant(conn, plant_data.plant_name, plant_data.plant_description, plant_data.plant_picture_id)
+    return JSONResponse(content={'message': 'Растение создано.'}, status_code=200)
 
 @router.patch("/plants/update", tags=["PlantController"], responses={
     200: {
@@ -226,13 +236,18 @@ async def plants_update(plant_id: int, plant_name: str | None = None, plant_desc
     """Описание: изменение параметров растения. На ввод подаются идентификатор, название, описание и идентификатор картинки."""
     conn = get_db_connection()
     if plant_name is not None and len(plant_name) == 0:
-        raise HTTPException(status_code=400, detail="Ошибка: название растения не должно быть пустым.")
+        raise HTTPException(status_code=400, detail=__create_error_message("Ошибка: название растения не должно быть пустым."))
     if plant_name is not None and len(plant_name) > 30:
-        raise HTTPException(status_code=400, detail="Ошибка: длина названия должна быть меньше или равна 30 символов.")
+        raise HTTPException(status_code=400, detail=__create_error_message("Ошибка: длина названия должна быть меньше или равна 30 символов."))
     if plant_description is not None and len(plant_description) > 3000:
-        raise HTTPException(status_code=400, detail="Ошибка: длина описания должна быть меньше или равна 3000 символов.")
+        raise HTTPException(status_code=400, detail=__create_error_message("Ошибка: длина описания должна быть меньше или равна 3000 символов."))
     if len(find_plant_name_with_id(conn, plant_id, plant_name)) != 0:
-        raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
+        raise HTTPException(status_code=400, detail=__create_error_message("Ошибка: название должно быть уникальным (повторы не допускаются)."))
     x = update_plant(conn, plant_id, plant_name, plant_description, plant_picture_id)
-    return Response("{'message':'Растение обновлено.'}", status_code=200)
+    return JSONResponse(content={"message" : "Растение обновлено."}, status_code=200)
+
+def __create_error_message (message: str):
+    return  {
+        'detail': message
+    }
 

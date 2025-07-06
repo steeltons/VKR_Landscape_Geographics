@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from utils import get_db_connection
 from controllers.UserController import get_current_active_admin_user
+from starlette.responses import JSONResponse
 
 router = APIRouter()
 security = HTTPBearer()
@@ -186,7 +187,7 @@ async def reliefs_insert(relief_name: str, relief_description: str | None = None
     if len(find_relief_name(conn, relief_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = insert_relief(conn, relief_name, relief_description, relief_picture_id)
-    return Response("{'message':'Рельеф создан.'}", status_code=200)
+    return JSONResponse(content={'message' : 'Рельеф создан'}, status_code=200)
 
 @router.patch("/reliefs/update", tags=["ReliefController"], responses={
     200: {

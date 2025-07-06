@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from utils import get_db_connection
 from controllers.UserController import get_current_active_admin_user
+from starlette.responses import JSONResponse
 
 router = APIRouter()
 security = HTTPBearer()
@@ -185,7 +186,7 @@ async def waters_insert(water_name: str, water_description: str | None = None, w
     if len(find_water_name(conn, water_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = insert_water(conn, water_name, water_description, water_picture_id)
-    return Response("{'message':'Вода создана.'}", status_code=200)
+    return JSONResponse(content={'message': 'Вода добавлена.'}, status_code=200)
 
 @router.patch("/waters/update", tags=["WaterController"], responses={
     200: {
@@ -234,4 +235,4 @@ async def waters_update(water_id: int, water_name: str | None = None, water_desc
     if len(find_water_name_with_id(conn, water_id, water_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = update_water(conn, water_id, water_name, water_description, water_picture_id)
-    return Response("{'message':'Вода обновлена.'}", status_code=200)
+    return JSONResponse(content={'message': 'Вода обновлёна.'}, status_code=200)

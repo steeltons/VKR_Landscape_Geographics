@@ -28,11 +28,12 @@ def get_pictures(conn, search_query=None, page=None, elements=None):
 
 
 def get_one_picture(conn, user_picture_id):
-    return pd.read_sql(f'''
+    query = '''
         SELECT picture_id, picture_base64
         FROM pictures
-        WHERE picture_id = {user_picture_id}
-    ''', conn)
+        WHERE picture_id = ?
+    '''
+    return pd.read_sql(query, conn, params=(user_picture_id,))
 
 def insert_picture(conn, user_picture_base64):
     cur = conn.cursor()
@@ -43,6 +44,7 @@ def insert_picture(conn, user_picture_base64):
         "userpicturebase64": user_picture_base64
     })
     conn.commit()
+    return cur.lastrowid
 
 def delete_picture(conn, user_picture_id):
     cur = conn.cursor()

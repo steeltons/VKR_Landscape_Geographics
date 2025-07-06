@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from utils import get_db_connection
 from controllers.UserController import get_current_active_admin_user
+from starlette.responses import JSONResponse
+
 
 router = APIRouter()
 security = HTTPBearer()
@@ -209,7 +211,7 @@ async def grounds_insert(ground_name: str, ground_description: str | None = None
     if len(find_ground_name(conn, ground_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = insert_ground(conn, ground_name, ground_description, ground_density, ground_humidity, ground_solidity, ground_picture_id)
-    return Response("{'message':'Грунт создан.'}", status_code=200)
+    return JSONResponse(content={'message': 'Грунт создан.'}, status_code=200)
 
 @router.patch("/grounds/update", tags=["GroundController"], responses={
     200: {
@@ -273,4 +275,4 @@ async def grounds_update(ground_id: int, ground_name: str | None = None, ground_
     if len(find_ground_name_with_id(conn, ground_id, ground_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = update_ground(conn, ground_id, ground_name, ground_description, ground_density, ground_humidity, ground_solidity, ground_picture_id)
-    return Response("{'message':'Грунт обновлён.'}", status_code=200)
+    return JSONResponse(content={'message': 'Грунт обновлён.'}, status_code=200)

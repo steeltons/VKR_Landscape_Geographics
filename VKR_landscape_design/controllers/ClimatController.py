@@ -5,6 +5,7 @@ import json
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from utils import get_db_connection
+from starlette.responses import JSONResponse
 
 router = APIRouter()
 security = HTTPBearer()
@@ -192,7 +193,7 @@ async def climats_insert(climat_name: str, climat_description: str | None = None
     if len(find_climat_name(conn, climat_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = insert_climat(conn, climat_name, climat_description, climat_picture_id)
-    return Response("{'message':'Климат создан.'}", status_code=200)
+    return JSONResponse(content={'message' : 'Климат создан'}, status_code=200)
 
 @router.patch("/climats/update", tags=["ClimatController"], responses={
     200: {
@@ -243,4 +244,4 @@ async def climats_update(climat_id: int, climat_name: str | None = None, climat_
     if len(find_climat_name_with_id(conn, climat_id, climat_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = update_climat(conn, climat_id, climat_name, climat_description, climat_picture_id)
-    return Response("{'message':'Климат обновлён.'}", status_code=200)
+    return JSONResponse(content={'message': 'Климат обновлён'}, status_code=200)
