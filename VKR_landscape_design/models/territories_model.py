@@ -42,6 +42,8 @@ def insert_territorie(conn, user_territorie_landscape_id, user_territorie_descri
         "userterritoriecolorb": user_territorie_color_b
     })
     conn.commit()
+    return cur.lastrowid
+
 
 def delete_territorie(conn, user_territorie_id):
     cur = conn.cursor()

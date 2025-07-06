@@ -4,6 +4,7 @@ from models.territories_model import *
 from utils import get_db_connection
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from controllers.UserController import get_current_active_admin_user
+from starlette.responses import JSONResponse
 
 router = APIRouter()
 security = HTTPBearer()
@@ -424,8 +425,16 @@ async def territories_insert(
         raise HTTPException(status_code=400, detail="Ошибка: значения цветов должны быть в диапазоне от 0 до 255.")
 
     conn = get_db_connection()
-    x = insert_territorie(conn, territorie_landscape_id, territorie_description, territorie_color_r, territorie_color_g, territorie_color_b)
-    return Response("{'message':'Территория создана.'}", status_code=200)
+    territorie_id = insert_territorie(
+        conn,
+        territorie_landscape_id,
+        territorie_description,
+        territorie_color_r,
+        territorie_color_g,
+        territorie_color_b
+    )
+
+    return JSONResponse(content={'message': 'Территория создана', 'id': territorie_id}, status_code=200)
 
 @router.patch("/territories/update", tags=["TerritorieController"], responses={
     200: {
