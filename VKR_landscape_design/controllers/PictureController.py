@@ -155,8 +155,7 @@ async def pictures_delete(picture_id: int,
         }
     }
 })
-async def pictures_insert(picture_base64: str,
-    current_user: dict = Depends(get_current_active_admin_user)):
+async def pictures_insert(picture_base64: str):
     """Описание: добавление картинки. На ввод подаётся строка в формате base64."""
     conn = get_db_connection()
     if len(picture_base64) == 0:
@@ -188,10 +187,7 @@ async def pictures_insert(picture_base64: str,
         }
     }
 })
-async def pictures_insert(
-    file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_active_admin_user)
-):
+async def pictures_insert(file: UploadFile = File(...),):
     """Добавление картинки. Принимает файл изображения и сохраняет в базу."""
     content = await file.read()
     if not content:
