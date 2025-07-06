@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from utils import get_db_connection
 from controllers.UserController import get_current_active_admin_user
+from starlette.responses import JSONResponse
 
 router = APIRouter()
 security = HTTPBearer()
@@ -217,7 +218,7 @@ async def landscapes_insert(landscape_name: str, landscape_code: str | None = No
     if len(find_landscape_name(conn, landscape_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = insert_landscape(conn, landscape_name, landscape_code, landscape_description, landscape_area_in_square_kilometers, landscape_area_in_percents, landscape_KR, landscape_picture_id)
-    return Response("{'message':'Ландшафт создан.'}", status_code=200)
+    return JSONResponse(content={'message': 'Ландшафт создан.'}, status_code=200)
 
 @router.patch("/landscapes/update", tags=["LandscapeController"], responses={
     200: {
@@ -286,4 +287,4 @@ async def landscapes_update(landscape_id: int, landscape_name: str | None = None
     if len(find_landscape_name_with_id(conn, landscape_id, landscape_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = update_landscape(conn, landscape_id, landscape_name, landscape_code, landscape_description, landscape_area_in_square_kilometers, landscape_area_in_percents, landscape_KR, landscape_picture_id)
-    return Response("{'message':'Ландшафт обновлён.'}", status_code=200)
+    return JSONResponse(content={'message': 'Ландшафт обновлён.'}, status_code=200)
