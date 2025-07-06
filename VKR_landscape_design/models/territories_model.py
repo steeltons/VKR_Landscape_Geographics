@@ -116,6 +116,9 @@ def get_territorie_with_related_objects(conn, territorie_id, is_need_pictures=Fa
     territorie_data = territorie.to_dict(orient="records")[0]
     landscape_id = territorie_data['territorie_landscape_id']
 
+    if not landscape_id:
+        return None
+
     # Получаем информацию о ландшафте
     landscape = pd.read_sql(f'''
         SELECT * FROM landscapes WHERE landscape_id = {landscape_id}
