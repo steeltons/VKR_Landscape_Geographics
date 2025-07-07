@@ -74,3 +74,12 @@ def delete_coord(conn, user_coords_id):
     ''', {"coordid": user_coords_id})
     conn.commit()
 
+def delete_coord_by_territorie_id(conn, territorie_id):
+    cur = conn.cursor()
+    print(territorie_id)
+    cur.execute('''
+        DELETE FROM coords
+        WHERE coords_territorie_id = :territorieid
+    ''', {"territorieid": territorie_id})
+    conn.commit()
+
