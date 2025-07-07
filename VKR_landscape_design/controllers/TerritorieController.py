@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Response, HTTPException, Depends
 import json
+
+from models.coords_model import delete_coord, delete_coord_by_territorie_id
 from models.territories_model import *
 from utils import get_db_connection
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -397,6 +399,7 @@ async def territories_delete(territorie_id: int,
     y = get_one_territorie(conn, territorie_id)
     if len(y) == 0:
         raise HTTPException(status_code=404, detail="Ошибка: территория с данным ID не найдена, потому удалить её невозможно.")
+    z = delete_coord_by_territorie_id(conn, territorie_id)
     x = delete_territorie(conn, territorie_id)
     return Response("{'message':'Территория удалена.'}", status_code=200)
 
