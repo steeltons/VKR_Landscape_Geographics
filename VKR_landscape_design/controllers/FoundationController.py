@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from utils import get_db_connection
 from controllers.UserController import get_current_active_admin_user
+from starlette.responses import JSONResponse
 
 router = APIRouter()
 security = HTTPBearer()
@@ -194,7 +195,7 @@ async def foundations_insert(foundation_name: str, foundation_description: str |
     if len(find_foundation_name(conn, foundation_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = insert_foundation(conn, foundation_name, foundation_description, foundation_depth_roof_root_in_meters, foundation_picture_id)
-    return Response("{'message':'Фундамент создан.'}", status_code=200)
+    return JSONResponse(content = {'message' : 'Фундамент создан.'}, status_code=200)
 
 @router.patch("/foundations/update", tags=["FoundationController"], responses={
     200: {
@@ -248,4 +249,4 @@ async def foundations_update(foundation_id: int, foundation_name: str | None = N
     if len(find_foundation_name_with_id(conn, foundation_id, foundation_name)) != 0:
         raise HTTPException(status_code=400, detail="Ошибка: название должно быть уникальным (повторы не допускаются).")
     x = update_foundation(conn, foundation_id, foundation_name, foundation_description, foundation_depth_roof_root_in_meters, foundation_picture_id)
-    return Response("{'message':'Фундамент обновлён.'}", status_code=200)
+    return JSONResponse(content = {'message' : 'Фундамент обновлён.'}, status_code=200)
