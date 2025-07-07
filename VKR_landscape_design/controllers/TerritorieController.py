@@ -447,14 +447,42 @@ async def territories_update(
     current_user: dict = Depends(get_current_active_admin_user)
 ):
     """Описание: изменение параметров территории. На ввод подаются идентификатор, идентификатор ландшафта и описание."""
+
     if (((territorie_color_r is not None) and ((territorie_color_r < 0) or (territorie_color_r > 255)))
             or ((territorie_color_g is not None) and ((territorie_color_g < 0) or (territorie_color_g > 255)))
             or ((territorie_color_b is not None) and ((territorie_color_b < 0) or (territorie_color_b > 255)))):
         raise HTTPException(status_code=400, detail="Ошибка: значения цветов должны быть в диапазоне от 0 до 255.")
 
     conn = get_db_connection()
+    y = get_one_territorie(conn, territorie_id)
+    if len(y) == 0:
+        raise HTTPException(status_code=404,
+                            detail="Ошибка: территория с данным ID не найдена, потому обновить её невозможно.")
     x = update_territorie(conn, territorie_id, territorie_landscape_id, territorie_description, territorie_color_r, territorie_color_g, territorie_color_b)
     return Response("{'message':'Территория обновлена.'}", status_code=200)
+
+@router.patch("/territories/untie_landscape", tags=["TerritorieController"], responses={
+    200: {
+        "description": "Territorie untie landscape successfully",
+        "content": {
+            "application/json": {
+                "example": {"message": "Ландшафт отвязан от территории."}
+            }
+        }
+    }
+})
+async def territories_untie_landscape(
+    territorie_id: int,
+    current_user: dict = Depends(get_current_active_admin_user)
+):
+    """Описание: отвязка ландшафта от территории. На вход подаётся идентификатор территории, от которой нужно отвязать ландшафт."""
+    conn = get_db_connection()
+    y = get_one_territorie(conn, territorie_id)
+    if len(y) == 0:
+        raise HTTPException(status_code=404,
+                            detail="Ошибка: территория с данным ID не найдена, потому отвязать ландшафт от неё невозможно.")
+    x = untie_landscape_from_territorie(conn, territorie_id)
+    return Response("{'message':'Ландшафт отвязан от территории.'}", status_code=200)
 
 @router.post("/territories/point-related-objects", tags=["TerritorieController"], responses={
     200: {

@@ -72,6 +72,19 @@ def update_territorie(conn, user_territorie_id, user_territorie_landscape_id, us
     })
     conn.commit()
 
+
+def untie_landscape_from_territorie(conn, user_territorie_id):
+    cur = conn.cursor()
+    cur.execute('''
+        UPDATE territories
+        SET
+            territorie_landscape_id = NULL
+        WHERE territorie_id = :userterritorieid
+    ''', {
+        "userterritorieid": user_territorie_id
+    })
+    conn.commit()
+
 def get_coords_by_territorie_id(conn, territorie_id):
     return pd.read_sql(f'''
         SELECT coords_id, coords_coord_x, coords_coord_y, coords_order 
