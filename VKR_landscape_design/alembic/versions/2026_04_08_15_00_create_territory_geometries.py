@@ -1,8 +1,8 @@
 """create territory_geometries table
 
-Revision ID: 0001_create_territory_geometries
-Revises: tsvetkov.stas
-Create Date: 2026-04-08
+Revision ID: 2026_04_08_15_00_create_territory_geometries
+Revises: stey
+Create Date: 2026-04-08 15:00
 """
 
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from geoalchemy2 import Geometry
 
 # revision identifiers, used by Alembic.
-revision = "0001_create_territory_geometries"
-down_revision = None
+revision = "20260408_1500_geometries"
+down_revision = '2026_04_08_12_00_init_script'
 branch_labels = None
 depends_on = None
 
@@ -25,7 +25,7 @@ def upgrade() -> None:
         sa.Column(
             "territory_id",
             sa.BigInteger(),
-            sa.ForeignKey("territories.territory_id", ondelete="CASCADE"),
+            sa.ForeignKey("territories.id", ondelete="CASCADE"),
             nullable=False,
         ),
         sa.Column(

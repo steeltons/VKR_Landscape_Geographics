@@ -101,3 +101,55 @@ class Relief(Base, EntityMixin):
         ForeignKey("file_metadata.id"),
         nullable=True,
     )
+
+class Foundation(Base, EntityMixin):
+    __tablename__ = "foundations"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    roof_root_depth: Mapped[Decimal | None] = mapped_column(Numeric)
+
+    picture_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("file_metadata.id"),
+        nullable=True,
+    )
+
+class Water(Base, EntityMixin):
+    __tablename__ = "waters"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    picture_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("file_metadata.id"),
+        nullable=True,
+    )
+
+class Climate(Base, EntityMixin):
+    __tablename__ = "climates"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    picture_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("file_metadata.id"),
+        nullable=True,
+    )
+
+class Territory(Base, EntityMixin):
+    __tablename__ = "territories"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    landscape_id: Mapped[BigInteger | None] = mapped_column(
+        BigInteger,
+        ForeignKey("landscapes.id"),
+        nullable=True,
+    )

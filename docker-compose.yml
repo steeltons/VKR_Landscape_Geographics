@@ -1,16 +1,10 @@
 version: '3.12'
 
 services:
-  web:
-    build: ./VKR_landscape_design
-    command: uvicorn main:app --host 0.0.0.0
-    volumes:
-      - .:/main
-    ports:
-      - 8000:8000
-
   db:
-    image: postgres:15-alpine
+    build:
+      context: .
+      dockerfile: postgres-custom.dockerfile
     environment:
       POSTGRES_USER: geo
       POSTGRES_PASSWORD: test
@@ -23,6 +17,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    volumes:
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
 #    Для локального запуска, чтобы БД оставалась в том же состоянии
 #    volumes:
 #      - postgres_data:/var/lib/postgresql/data
