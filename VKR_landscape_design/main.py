@@ -1,8 +1,6 @@
-# main.py
-
 from typing import Optional
 
-from starlette.middleware.cors import CORSMiddleware
+import uvicorn
 
 from controllers import UserController
 from controllers import TerritorieController
@@ -26,25 +24,17 @@ from controllers import ConnectionLandscapesClimatsController
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from core.config import settings
+from core.cors import setup_cors
+
 class Item(BaseModel):
     name: str
     description: Optional[str] = None
     price: float
     tax: Optional[float] = None
 
-app = FastAPI()
-
-origins = [
-    'http://localhost:3000',
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
+app = FastAPI(title= settings.app_name)
+setup_cors(app)
 
 app.include_router(UserController.router)
 app.include_router(TerritorieController.router)
@@ -65,3 +55,11 @@ app.include_router(ConnectionLandscapesReliefsController.router)
 app.include_router(ConnectionLandscapesFoundationsController.router)
 app.include_router(ConnectionLandscapesWatersController.router)
 app.include_router(ConnectionLandscapesClimatsController.router)
+
+if __name__ == '__main__':
+    uvicorn.run(
+        app,
+        host= settings.app_host,
+        port= settings.app_port,
+        log_level= settings.app_debug,
+    )
