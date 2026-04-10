@@ -1,3 +1,15 @@
 -- init-db.sql
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS postgis_topology;
+
+-- Тестовые учётные записи
+CREATE USER olms_people_keeper WITH PASSWORD '5uthU]evx2RYV-2B].hMsH=aU>ia-2!9';
+CREATE USER olms_knowledge_keeper WITH PASSWORD 'LjC_W_:V2}s.d6+uY+xae}r~#tovUmZ0';
+
+-- Создание БД
+CREATE DATABASE olms_people OWNER olms_people_keeper;
+CREATE DATABASE olms_knowledge OWNER olms_knowledge_keeper;
+
+-- Выдача прав
+GRANT ALL PRIVILEGES ON DATABASE olms_people TO olms_people_keeper;
+GRANT ALL PRIVILEGES ON DATABASE olms_knowledge TO olms_knowledge_keeper;
