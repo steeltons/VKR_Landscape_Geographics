@@ -403,4 +403,7 @@ pyrightconfig.json
 .history
 .ionide
 
+# keys (private | public)
+*.pem
+
 # End of https://www.toptal.com/developers/gitignore/api/python,flask,pycharm,visualstudiocode,jupyternotebooks

@@ -1,6 +1,7 @@
 import uuid
+from datetime import datetime
 
-from sqlalchemy import String, ForeignKey, Boolean, Integer, BigInteger
+from sqlalchemy import String, ForeignKey, Boolean, Integer, BigInteger, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -73,5 +74,30 @@ class UserAuthority(Base, EntityMixin):
         ForeignKey('users.id', onupdate='CASCADE', ondelete='CASCADE'),
         nullable=False
     )
+
+class AuthRefreshSession(Base):
+    __tablename__ = 'auth_refresh_sessions'
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    token_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable= False, unique= True, default= uuid.uuid4)
+
+    refresh_token_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone= True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone= True), nullable=False)
+    revoked_at: Mapped[datetime] = mapped_column(DateTime(timezone= True), nullable=False)
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    replaced_by_token_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("auth_refresh_sessions.token_id", onupdate="CASCADE", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+
 
 

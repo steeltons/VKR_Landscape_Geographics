@@ -1,6 +1,7 @@
 -- init-db.sql
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS postgis_topology;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- Тестовые учётные записи
 CREATE USER olms_people_keeper WITH PASSWORD '5uthU]evx2RYV-2B].hMsH=aU>ia-2!9';

@@ -2,12 +2,14 @@ from pathlib import Path
 from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+CORE_DIR = Path(__file__).resolve().parent
+APP_DIR = CORE_DIR.parent
+PROJECT_ROOT = APP_DIR.parent
 
 class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
-        env_file= BASE_DIR / '.env',
+        env_file= PROJECT_ROOT / '.env',
         env_file_encoding= 'utf-8',
         case_sensitive= False,
         extra= 'ignore'
@@ -17,6 +19,12 @@ class Settings(BaseSettings):
     app_host: str = "0.0.0.0"
     app_port: int = 8010
     app_debug: bool = True
+
+    jwt_private_key_path: str
+    jwt_public_key_path: str
+    jwt_algorithm: str = "RS256"
+    access_token_ttl_minutes: int = 15
+    refresh_token_ttl_days: int = 30
 
     db_host: str
     db_port: int
@@ -30,6 +38,20 @@ class Settings(BaseSettings):
             f"postgresql+psycopg://{self.db_user}:{self.db_password}"
             f"@{self.db_host}:{self.db_port}/{self.db_name}"
         )
+
+    @property
+    def jwt_private_key(self) -> str:
+        path = Path(self.jwt_private_key_path)
+        if not path.is_absolute():
+            path = PROJECT_ROOT / path
+        return path.read_text(encoding="utf-8")
+
+    @property
+    def jwt_public_key(self) -> str:
+        path = Path(self.jwt_public_key_path)
+        if not path.is_absolute():
+            path = PROJECT_ROOT / path
+        return path.read_text(encoding="utf-8")
 
 
 @lru_cache
