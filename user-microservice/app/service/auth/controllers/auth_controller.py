@@ -20,6 +20,6 @@ def logout(body: AuthLogoutRqDto, auth_service: AuthService = Depends(get_auth_s
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-@router.post("/refresh", response_model=AuthTokenRsDto)
+@router.post("/refresh", response_model= AuthTokenRsDto)
 def refresh(body: AuthRefreshRqDto, auth_service: AuthService = Depends(get_auth_service)) -> AuthTokenRsDto:
     return auth_service.refresh(body)

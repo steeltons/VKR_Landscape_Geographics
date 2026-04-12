@@ -24,7 +24,7 @@ class TokenService:
         self.issuer = issuer
         self.audience = audience
 
-    def create_access_token(self, principal: AuthPrincipalDto) -> tuple[str, int]:
+    def create_access_token(self, principal: AuthPrincipalDto, authorities: list[str]) -> tuple[str, int]:
         now = datetime.now(timezone.utc)
         expires_at = now + timedelta(minutes= self.access_token_ttl_minutes)
 
@@ -35,6 +35,7 @@ class TokenService:
             "type": "access",
             "iat": int(now.timestamp()),
             "exp": int(expires_at.timestamp()),
+            "authorities": authorities if authorities is not None else [],
         }
 
         if self.issuer is not None:

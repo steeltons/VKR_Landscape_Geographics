@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -5,6 +7,8 @@ from app.service.auth.dto.auth_dto import AuthLoginRqDto, AuthTokenRsDto, AuthLo
 from app.service.auth.password_service import authenticate, get_principal_by_user_id
 from app.service.auth.refresh_session_service import create_session, revoke_session_by_refresh_token, get_valid_session_by_refresh_token, rotate_session
 from app.service.auth.token_service import TokenService
+
+from app.models.models import UserAuthority
 
 
 class AuthService:
@@ -25,7 +29,9 @@ class AuthService:
                 detail="Invalid credentials",
             )
 
-        access_token, expires_in = self.token_service.create_access_token(principal)
+        authorities = self.__get_user_authorities(user_id= principal.user_id)
+
+        access_token, expires_in = self.token_service.create_access_token(principal, authorities)
         refresh_token, token_id, refresh_expires_at = self.token_service.create_refresh_token()
 
         create_session(db= self.db, user_id= principal.user_id, token_id= token_id, raw_refresh_token= refresh_token, expires_at= refresh_expires_at)
@@ -55,7 +61,9 @@ class AuthService:
                 detail="User not found",
             )
 
-        access_token, expires_in = self.token_service.create_access_token(principal)
+        authorities = self.__get_user_authorities(user_id= principal.user_id)
+
+        access_token, expires_in = self.token_service.create_access_token(principal, authorities)
         new_refresh_token, new_token_id, new_refresh_expires_at = self.token_service.create_refresh_token()
 
         rotate_session(
@@ -77,3 +85,11 @@ class AuthService:
     def logout(self, rq: AuthLogoutRqDto) -> None:
         revoke_session_by_refresh_token(db= self.db, raw_refresh_token= rq.refresh_token)
         self.db.commit()
+
+    def __get_user_authorities(self, user_id : UUID):
+        user_authorities = (self.db.query(UserAuthority)
+                            .where((UserAuthority.user_id == user_id) &
+                                   (UserAuthority.is_active.is_(True)))
+                            .all())
+
+        return [user_authority.authority.system_name for user_authority in user_authorities]

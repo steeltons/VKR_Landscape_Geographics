@@ -1,12 +1,35 @@
 import uuid
+import enum
 from datetime import datetime
 
-from sqlalchemy import String, ForeignKey, Boolean, Integer, BigInteger, DateTime
+from sqlalchemy import String, ForeignKey, Integer, BigInteger, DateTime, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from .entity_mixin import EntityMixin
-from db.database import Base
+from app.models.entity_mixin import EntityMixin
+from app.db.database import Base
+
+class UserAuthorityType(enum.Enum):
+
+    ADD_USERS = ("ADD_USERS", "Добавление пользователей")
+    REMOVE_USERS = ("REMOVE_USERS", "Удаление пользователей")
+    EDIT_USERS = ("EDIT_USERS", "Редактирование пользователей")
+    GRANT_PERMISSIONS = ('GRANT_PERMISSIONS', 'Выдача прав')
+    REVOKE_PERMISSIONS = ('REVOKE_PERMISSIONS', 'Отзыв прав')
+
+    def __new__(cls, system_name: str, display_name: str):
+        obj = object.__new__(cls)
+        obj._value_ = system_name
+        obj.system_name = system_name
+        obj.display_name = display_name
+        return obj
+
+    @classmethod
+    def from_system_name(cls, code: str) -> "UserAuthorityType":
+        for item in cls:
+            if item.system_name == code:
+                return item
+        raise ValueError(f"Unknown authority code: {code}")
 
 class FileMetadata(Base, EntityMixin):
     __tablename__ = 'file_metadata'
@@ -67,7 +90,16 @@ class UserAuthority(Base, EntityMixin):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 
-    authority : Mapped[str] = mapped_column(String, nullable=False)
+    authority: Mapped[UserAuthorityType] = mapped_column(
+        Enum(
+            UserAuthorityType,
+            name= "authority",
+            native_enum= False,
+            validate_strings= True,
+            values_callable= lambda enum_cls: [item.value for item in enum_cls],
+        ),
+        nullable=False,
+    )
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID,
@@ -97,7 +129,3 @@ class AuthRefreshSession(Base):
         ForeignKey("auth_refresh_sessions.token_id", onupdate="CASCADE", ondelete="SET NULL"),
         nullable=True,
     )
-
-
-
-
