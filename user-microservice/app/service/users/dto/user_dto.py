@@ -22,3 +22,15 @@ class UserAuthoritiesRqDto(BaseModel):
 
     authorities: list[UserAuthorityType] = Field(default_factory= list)
 
+class FullyCreateUserRqDto(BaseModel):
+
+    login: str
+    email: str
+    password: str
+    authorities: list[UserAuthorityType] = Field(default_factory= list)
+
+    first_name: str = Field(default_factory= str)
+    last_name: str = Field(default_factory= str)
+    middle_name: str = Field(default_factory= str)
+    age: int = Field(default_factory= int)
+    gender: str = Field(default_factory= str)

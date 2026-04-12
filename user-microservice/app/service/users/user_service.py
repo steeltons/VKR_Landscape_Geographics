@@ -5,8 +5,8 @@ from fastapi import HTTPException, status
 from sqlalchemy import select, text, update
 from sqlalchemy.orm import Session
 
-from app.models.models import User, UserAuthorityType, UserAuthority
-from app.service.users.dto.user_dto import UserRsDto, AddUserRqDto, UserAuthoritiesRqDto
+from app.models.models import User, UserAuthorityType, UserAuthority, UserProfile
+from app.service.users.dto.user_dto import UserRsDto, AddUserRqDto, UserAuthoritiesRqDto, FullyCreateUserRqDto
 
 
 def get_all_users(db: Session) -> list[UserRsDto]:
@@ -35,7 +35,7 @@ def add_user(user_authorities: list[UserAuthorityType], body: AddUserRqDto, db: 
 
     db.add(user)
     db.flush()
-    __add_user_password(body, user, db)
+    __add_user_password(body.password, user, db)
 
     return UserRsDto.model_validate(user)
 
@@ -95,6 +95,19 @@ def revoke_authorities(user_id: UUID, caller_authorities: list[UserAuthorityType
     db.execute(stmt)
     db.commit()
 
+def add_full_user(body: FullyCreateUserRqDto, db: Session) -> UserRsDto:
+    main_user = User(login= body.login, email= body.email, is_active= True)
+    db.add(main_user)
+    db.flush()
+
+    user_profile = UserProfile(first_name= body.first_name, middle_name= body.middle_name, last_name= body.last_name, gender= body.gender, age= body.age, user_id= main_user.id)
+    db.add(user_profile)
+    db.flush()
+
+    __add_user_password(body.password, main_user, db)
+
+    return UserRsDto.model_validate(main_user)
+
 def get_by_login(login: str, db: Session) -> UserRsDto | None:
     user = (db.query(User)
             .filter(User.login == login)
@@ -105,7 +118,7 @@ def get_by_login(login: str, db: Session) -> UserRsDto | None:
     else:
         return None
 
-def __add_user_password(body: AddUserRqDto, user: User, db: Session) -> None:
+def __add_user_password(user_password: str, user: User, db: Session) -> None:
     db.execute(
         text("""
             INSERT INTO user_passwords(id, password, user_id, created_at, updated_at, is_active)
@@ -118,7 +131,7 @@ def __add_user_password(body: AddUserRqDto, user: User, db: Session) -> None:
                 true
                 )
         """),
-        {'password' : body.password, 'user_id' : user.id}
+        {'password' : user_password, 'user_id' : user.id}
     )
     db.commit()
     db.refresh(user)
