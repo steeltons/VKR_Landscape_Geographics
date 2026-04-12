@@ -21,10 +21,13 @@ class Settings(BaseSettings):
     app_debug: bool = True
 
     jwt_private_key_path: str
-    jwt_public_key_path: str
     jwt_algorithm: str = "RS256"
     access_token_ttl_minutes: int = 15
     refresh_token_ttl_days: int = 30
+
+    jwt_public_key_path: str
+    jwt_issuer: str | None = None
+    jwt_audience: str | None = None
 
     db_host: str
     db_port: int

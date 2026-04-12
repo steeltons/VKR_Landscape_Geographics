@@ -7,11 +7,22 @@ from jose import jwt
 from app.service.auth.dto.auth_dto import AuthPrincipalDto
 
 class TokenService:
-    def __init__(self, private_key: str, algorithm: str, access_token_ttl_minutes: int, refresh_token_ttl_days: int):
+
+    def __init__(
+        self,
+        private_key: str,
+        algorithm: str = "RS256",
+        access_token_ttl_minutes: int = 15,
+        refresh_token_ttl_days: int = 30,
+        issuer: str | None = None,
+        audience: str | None = None,
+    ):
         self.private_key = private_key
         self.algorithm = algorithm
         self.access_token_ttl_minutes = access_token_ttl_minutes
         self.refresh_token_ttl_days = refresh_token_ttl_days
+        self.issuer = issuer
+        self.audience = audience
 
     def create_access_token(self, principal: AuthPrincipalDto) -> tuple[str, int]:
         now = datetime.now(timezone.utc)
@@ -24,8 +35,13 @@ class TokenService:
             "type": "access",
             "iat": int(now.timestamp()),
             "exp": int(expires_at.timestamp()),
-            "jti": str(uuid.uuid4()),
         }
+
+        if self.issuer is not None:
+            payload["iss"] = self.issuer
+
+        if self.audience is not None:
+            payload["audience"] = self.audience
 
         token = jwt.encode(payload, self.private_key, algorithm=self.algorithm)
         return token, self.access_token_ttl_minutes * 60

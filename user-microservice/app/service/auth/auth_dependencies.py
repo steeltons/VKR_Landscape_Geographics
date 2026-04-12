@@ -14,6 +14,8 @@ def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
         algorithm= settings.jwt_algorithm,
         access_token_ttl_minutes= settings.access_token_ttl_minutes,
         refresh_token_ttl_days= settings.refresh_token_ttl_days,
+        issuer= settings.jwt_issuer,
+        audience= settings.jwt_audience,
     )
 
     return AuthService(
