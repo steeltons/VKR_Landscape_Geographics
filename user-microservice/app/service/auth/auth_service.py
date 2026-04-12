@@ -1,9 +1,9 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.service.auth.dto.auth_dto import AuthLoginRqDto, AuthTokenRsDto
-from app.service.auth.password_service import authenticate
-from app.service.auth.refresh_session_service import create_session
+from app.service.auth.dto.auth_dto import AuthLoginRqDto, AuthTokenRsDto, AuthLogoutRqDto, AuthRefreshRqDto
+from app.service.auth.password_service import authenticate, get_principal_by_user_id
+from app.service.auth.refresh_session_service import create_session, revoke_session_by_refresh_token, get_valid_session_by_refresh_token, rotate_session
 from app.service.auth.token_service import TokenService
 
 
@@ -37,3 +37,43 @@ class AuthService:
             refresh_token= refresh_token,
             expires_in= expires_in,
         )
+
+    def refresh(self, rq: AuthRefreshRqDto) -> AuthTokenRsDto:
+        current_session = get_valid_session_by_refresh_token(db= self.db, raw_refresh_token= rq.refresh_token)
+
+        if current_session is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired refresh token",
+            )
+
+        principal = get_principal_by_user_id(db= self.db, user_id= current_session.user_id)
+
+        if principal is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+            )
+
+        access_token, expires_in = self.token_service.create_access_token(principal)
+        new_refresh_token, new_token_id, new_refresh_expires_at = self.token_service.create_refresh_token()
+
+        rotate_session(
+            db=self.db,
+            current_session=current_session,
+            new_token_id=new_token_id,
+            new_raw_refresh_token=new_refresh_token,
+            new_expires_at=new_refresh_expires_at,
+        )
+
+        self.db.commit()
+
+        return AuthTokenRsDto(
+            access_token=access_token,
+            refresh_token=new_refresh_token,
+            expires_in=expires_in,
+        )
+
+    def logout(self, rq: AuthLogoutRqDto) -> None:
+        revoke_session_by_refresh_token(db= self.db, raw_refresh_token= rq.refresh_token)
+        self.db.commit()

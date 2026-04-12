@@ -6,6 +6,11 @@ class AuthLoginRqDto(BaseModel):
     login: str
     password: str
 
+class AuthLogoutRqDto(BaseModel):
+    refresh_token: str
+
+class AuthRefreshRqDto(BaseModel):
+    refresh_token: str
 
 class AuthPrincipalDto(BaseModel):
     user_id: uuid.UUID
