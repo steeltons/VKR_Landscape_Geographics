@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from app.configs.core.config import settings
 from app.configs.core.cors import setup_cors
 from app.configs.db.dependencies import get_db
-
+from app.service.ground.ground_controller import router as ground_router
+from app.service.plant.plant_controller import router as plant_router
 from app.service.soil.soil_controller import router as soil_router
 
 
@@ -17,6 +18,8 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(soil_router)
+    app.include_router(ground_router)
+    app.include_router(plant_router)
 
     setup_cors(app)
 
