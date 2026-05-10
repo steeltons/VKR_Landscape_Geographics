@@ -3,7 +3,7 @@ from pydantic import BaseModel, EmailStr
 
 
 class AuthLoginRqDto(BaseModel):
-    login: str
+    username: str
     password: str
 
 class AuthLogoutRqDto(BaseModel):

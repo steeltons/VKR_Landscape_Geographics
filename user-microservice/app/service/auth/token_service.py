@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 from jose import jwt
 
+from app.models.models import UserProfile
 from app.service.auth.dto.auth_dto import AuthPrincipalDto
 
 class TokenService:
@@ -24,9 +25,10 @@ class TokenService:
         self.issuer = issuer
         self.audience = audience
 
-    def create_access_token(self, principal: AuthPrincipalDto, authorities: list[str]) -> tuple[str, int]:
+    def create_access_token(self, principal: AuthPrincipalDto, user_profile: UserProfile, authorities: list[str]) -> tuple[str, int]:
         now = datetime.now(timezone.utc)
         expires_at = now + timedelta(minutes= self.access_token_ttl_minutes)
+
 
         payload = {
             "sub": str(principal.user_id),
@@ -36,6 +38,7 @@ class TokenService:
             "iat": int(now.timestamp()),
             "exp": int(expires_at.timestamp()),
             "authorities": authorities if authorities is not None else [],
+            "name": f'{user_profile.last_name} {user_profile.first_name} {user_profile.middle_name}',
         }
 
         if self.issuer is not None:

@@ -1,3 +1,5 @@
+import uuid
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.models import UserAuthorityType
@@ -9,6 +11,20 @@ class UserRsDto(BaseModel):
 
     login: str
     email: str
+
+class FullUserRsDto(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    login: str
+    email: str
+
+    first_name: str
+    middle_name: str
+    last_name: str
+    age: int
+    gender: str
+    picture_id: uuid.UUID | None
 
 class AddUserRqDto(BaseModel):
 

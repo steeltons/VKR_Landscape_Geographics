@@ -22,7 +22,6 @@ class ClimateRsDto(BaseModel):
     name: str
     description: str | None
     picture_id: UUID | None
-    is_active: bool
 
 
 class ClimatesRsDto(BaseModel):

@@ -5,8 +5,10 @@ from sqlalchemy.orm import Session
 
 from app.components.territory.territory_component import TerritoryComponent
 from app.configs.db.dependencies import get_db
-from app.service.territory.territory_dto import (TerritoriesRsDto, TerritoryCreateParamsRqDto, TerritoryRsDto, TerritoryUpdateParamsRqDto)
+from app.service.territory.territory_dto import (TerritoriesRsDto, TerritoryCreateParamsRqDto, TerritoryRsDto,
+                                                 TerritoryUpdateParamsRqDto, TerritoryPointSearchRsDto)
 from app.service.territory.territory_dto_mapper import TerritoryDtoMapper
+from app.service.territory.territory_service import TerritoryService
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +52,27 @@ def get_territory_by_id(
 
     result = TerritoryDtoMapper.to_rs_dto(item)
     logger.debug("END TerritoryController::get_territory_by_id %s %s", params, result)
+    return result
+
+@router.get("/by-point/related-objects", response_model=TerritoryPointSearchRsDto)
+def get_by_related_points(point_x = Query(...), point_y = Query(...), db: Session = Depends(get_db)):
+    params = {"point_x": point_x, "point_y": point_y}
+    logger.debug("START TerritoryController::get_by_related_points %s", params)
+
+    service = TerritoryService(db)
+    result = service.get_territory_by_point(point_x, point_y)
+
+    if result is None:
+        logger.debug(
+            "END TerritoryController::get_by_related_points %s None",
+            params,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Точка не принадлежит ни одной территории.",
+        )
+
+    logger.debug("END TerritoryController::get_by_related_points %s, %s", params, result)
     return result
 
 

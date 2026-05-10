@@ -1,5 +1,6 @@
 from pathlib import Path
 from functools import lru_cache
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 CORE_DIR = Path(__file__).resolve().parent
@@ -35,6 +36,8 @@ class Settings(BaseSettings):
     db_user: str
     db_password: str
 
+    cors_origins: str = Field(default="http://localhost:3000")
+
     @property
     def sqlalchemy_database_uri(self) -> str:
         return (
@@ -55,6 +58,10 @@ class Settings(BaseSettings):
         if not path.is_absolute():
             path = PROJECT_ROOT / path
         return path.read_text(encoding="utf-8")
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [item.strip() for item in self.cors_origins.split(",") if item.strip()]
 
 
 @lru_cache

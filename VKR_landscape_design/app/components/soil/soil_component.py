@@ -22,6 +22,12 @@ class SoilComponent:
 
             return SoilMapper.to_dc(entity)
 
+    def get_all_by_landscape_id(self, landscape_id: int) -> list[SoilDC] | None:
+        with self.db.begin_nested():
+            return SoilMapper.to_dc_list(
+                self.repository.get_all_by_landscape_id(landscape_id)
+            )
+
     def get_all(self) -> list[SoilDC]:
         with self.db.begin_nested():
             entities = self.repository.get_all()

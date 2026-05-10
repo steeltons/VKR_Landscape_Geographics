@@ -18,6 +18,12 @@ class WaterComponent:
             entity = self.repository.get_by_id(water_id)
             return WaterComponentMapper.to_dc(entity) if entity else None
 
+    def get_all_by_landscape_id(self, landscape_id: int) -> list[WaterDC]:
+        with self.db.begin_nested():
+            return WaterComponentMapper.to_dc_list(
+                self.repository.get_by_landscape_id(landscape_id)
+            )
+
     def get_all(self, limit: int = 100, offset: int = 0) -> list[WaterDC]:
         with self.db.begin_nested():
             return WaterComponentMapper.to_dc_list(

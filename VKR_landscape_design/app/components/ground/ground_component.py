@@ -21,6 +21,12 @@ class GroundComponent:
                 return None
             return GroundComponentMapper.to_dc(entity)
 
+    def get_all_by_landscape_id(self, landscape_id: int) -> list[GroundDC]:
+        with self.db.begin_nested():
+            return GroundComponentMapper.to_dc_list(
+                self.repository.get_all_by_landscape_id(landscape_id)
+            )
+
     def get_all(self, limit: int = 100, offset: int = 0) -> list[GroundDC]:
         with self.db.begin_nested():
             entities = self.repository.get_all(limit=limit, offset=offset)

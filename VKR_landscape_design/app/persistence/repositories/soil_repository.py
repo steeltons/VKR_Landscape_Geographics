@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.persistence.models import Soil
+from app.persistence.models import Soil, LandscapeSoilConnection
 
 
 class SoilRepository:
@@ -15,6 +15,17 @@ class SoilRepository:
             .where(Soil.is_active.is_(True))
         )
         return self.db.scalar(stmt)
+
+    def get_all_by_landscape_id(self, landscape_id):
+        stmt = (
+            select(Soil)
+            .join(LandscapeSoilConnection, LandscapeSoilConnection.soil_id == Soil.id)
+            .where(LandscapeSoilConnection.landscape_id == landscape_id)
+            .where(Soil.is_active.is_(True))
+            .order_by(Soil.created_at)
+        )
+
+        return list(self.db.scalars(stmt).all())
 
     def get_all(self, limit: int = 100, offset: int = 0) -> list[Soil]:
         stmt = (

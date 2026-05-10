@@ -10,8 +10,10 @@ from app.models.models import UserAuthorityType
 from app.service.decorators.require_authorities_decorator import require_authorities
 
 from app.db.dependencies import get_db
-from app.service.users.dto.user_dto import UserRsDto, AddUserRqDto, UserAuthoritiesRqDto, FullyCreateUserRqDto
-from app.service.users.user_service import get_all_users, get_by_email, get_by_login, add_user, grant_authorities, revoke_authorities, add_full_user
+from app.service.users.dto.user_dto import UserRsDto, AddUserRqDto, UserAuthoritiesRqDto, FullyCreateUserRqDto, \
+    FullUserRsDto
+from app.service.users.user_service import get_all_users, get_by_email, get_by_login, add_user, grant_authorities, \
+    revoke_authorities, add_full_user, get_user_profile_by_id
 from app.utils.jwt_utils import get_authorities
 
 logger = logging.getLogger(__name__)
@@ -24,6 +26,10 @@ router = APIRouter(
 @router.get("", response_model=list[UserRsDto], dependencies= [Depends(require_access_token)])
 def get_users(db: Session = Depends(get_db)) -> list[UserRsDto]:
     return get_all_users(db)
+
+@router.get("/{user_id}", response_model=FullUserRsDto, dependencies= [Depends(require_access_token)])
+def get_user_profile(user_id: uuid.UUID, db: Session = Depends(get_db)) -> FullUserRsDto:
+    return get_user_profile_by_id(user_id=user_id, db=db)
 
 @router.post(
     "",

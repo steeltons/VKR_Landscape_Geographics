@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.persistence.models import Water
+from app.persistence.models import Water, LandscapeWaterConnection
 
 
 class WaterRepository:
@@ -14,6 +14,17 @@ class WaterRepository:
             Water.is_active.is_(True),
         )
         return self.db.scalar(stmt)
+
+    def get_by_landscape_id(self, landscape_id: int) -> list[Water]:
+        stmt = (
+            select(Water)
+            .join(LandscapeWaterConnection, LandscapeWaterConnection.water_id == Water.id)
+            .where(LandscapeWaterConnection.landscape_id == landscape_id)
+            .where(Water.is_active.is_(True))
+            .order_by(Water.created_at)
+        )
+
+        return list(self.db.scalars(stmt).all())
 
     def get_all(self, limit: int = 100, offset: int = 0) -> list[Water]:
         stmt = (

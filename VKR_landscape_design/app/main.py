@@ -15,6 +15,7 @@ from app.service.water.water_controller import router as water_router
 from app.service.climate.climate_controller import router as climate_router
 from app.service.landscape.landscape_controller import router as landscape_router
 from app.service.territory.territory_controller import router as territory_router
+from app.service.coordinates import coordinates_router
 
 
 def create_app() -> FastAPI:
@@ -32,6 +33,7 @@ def create_app() -> FastAPI:
     app.include_router(climate_router)
     app.include_router(landscape_router)
     app.include_router(territory_router)
+    app.include_router(coordinates_router)
 
     setup_cors(app)
 

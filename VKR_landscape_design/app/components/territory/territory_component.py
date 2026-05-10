@@ -16,6 +16,23 @@ class TerritoryComponent:
             entity = self.repository.get_by_id(territory_id)
             return TerritoryComponentMapper.to_dc(entity) if entity else None
 
+    def get_by_point(
+            self,
+            *,
+            point_x: float,
+            point_y: float,
+    ) -> TerritoryDC | None:
+        with self.db.begin_nested():
+            entity = self.repository.get_by_point(
+                point_x=point_x,
+                point_y=point_y,
+            )
+
+            if entity is None:
+                return None
+
+            return TerritoryComponentMapper.to_dc(entity)
+
     def get_all(self, limit: int = 100, offset: int = 0) -> list[TerritoryDC]:
         with self.db.begin_nested():
             return TerritoryComponentMapper.to_dc_list(

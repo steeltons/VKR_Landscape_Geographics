@@ -18,6 +18,12 @@ class ClimateComponent:
             entity = self.repository.get_by_id(climate_id)
             return ClimateComponentMapper.to_dc(entity) if entity else None
 
+    def get_all_by_landscape_id(self, landscape_id: int) -> list[ClimateDC] | None:
+        with self.db.begin_nested():
+            return ClimateComponentMapper.to_dc_list(
+                self.repository.get__all_by_landscape_id(landscape_id)
+            )
+
     def get_all(self, limit: int = 100, offset: int = 0) -> list[ClimateDC]:
         with self.db.begin_nested():
             return ClimateComponentMapper.to_dc_list(

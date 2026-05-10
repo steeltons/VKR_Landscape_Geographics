@@ -8,7 +8,7 @@ from app.service.auth.password_service import authenticate, get_principal_by_use
 from app.service.auth.refresh_session_service import create_session, revoke_session_by_refresh_token, get_valid_session_by_refresh_token, rotate_session
 from app.service.auth.token_service import TokenService
 
-from app.models.models import UserAuthority
+from app.models.models import UserAuthority, UserProfile
 
 
 class AuthService:
@@ -21,7 +21,7 @@ class AuthService:
         self.token_service = token_service
 
     def login(self, rq: AuthLoginRqDto) -> AuthTokenRsDto:
-        principal = authenticate(db= self.db, login= rq.login, password= rq.password)
+        principal = authenticate(db= self.db, login= rq.username, password= rq.password)
 
         if principal is None:
             raise HTTPException(
@@ -30,8 +30,9 @@ class AuthService:
             )
 
         authorities = self.__get_user_authorities(user_id= principal.user_id)
+        user_profile = self.__get_user_profile(user_id= principal.user_id)
 
-        access_token, expires_in = self.token_service.create_access_token(principal, authorities)
+        access_token, expires_in = self.token_service.create_access_token(principal, user_profile, authorities)
         refresh_token, token_id, refresh_expires_at = self.token_service.create_refresh_token()
 
         create_session(db= self.db, user_id= principal.user_id, token_id= token_id, raw_refresh_token= refresh_token, expires_at= refresh_expires_at)
@@ -62,8 +63,9 @@ class AuthService:
             )
 
         authorities = self.__get_user_authorities(user_id= principal.user_id)
+        user_profile = self.__get_user_profile(user_id= principal.user_id)
 
-        access_token, expires_in = self.token_service.create_access_token(principal, authorities)
+        access_token, expires_in = self.token_service.create_access_token(principal, user_profile, authorities)
         new_refresh_token, new_token_id, new_refresh_expires_at = self.token_service.create_refresh_token()
 
         rotate_session(
@@ -93,3 +95,9 @@ class AuthService:
                             .all())
 
         return [user_authority.authority.system_name for user_authority in user_authorities]
+
+    def __get_user_profile(self, user_id : UUID) -> UserProfile | None:
+        return (self.db.query(UserProfile)
+                .filter(UserProfile.user_id == user_id)
+                .filter(UserProfile.is_active.is_(True))
+                .first())

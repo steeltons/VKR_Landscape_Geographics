@@ -1,7 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.persistence.models import Climate
+from app.components.landscape.landscape_component import LandscapeComponent
+from app.persistence.models import Climate, LandscapeClimateConnection
 
 
 class ClimateRepository:
@@ -14,6 +15,20 @@ class ClimateRepository:
             Climate.is_active.is_(True),
         )
         return self.db.scalar(stmt)
+
+    def get__all_by_landscape_id(self, landscape_id: int) -> list[Climate] | None:
+        stmt = (
+            select(Climate)
+            .join(
+                LandscapeClimateConnection,
+                LandscapeClimateConnection.climate_id == Climate.id,
+            )
+            .where(LandscapeClimateConnection.landscape_id == landscape_id)
+            .where(Climate.is_active.is_(True))
+            .order_by(Climate.created_at)
+        )
+
+        return list(self.db.scalars(stmt).all())
 
     def get_all(self, limit: int = 100, offset: int = 0) -> list[Climate]:
         stmt = (

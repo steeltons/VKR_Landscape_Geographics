@@ -6,13 +6,43 @@ from sqlalchemy import select, text, update
 from sqlalchemy.orm import Session
 
 from app.models.models import User, UserAuthorityType, UserAuthority, UserProfile
-from app.service.users.dto.user_dto import UserRsDto, AddUserRqDto, UserAuthoritiesRqDto, FullyCreateUserRqDto
+from app.service.users.dto.user_dto import UserRsDto, AddUserRqDto, UserAuthoritiesRqDto, FullyCreateUserRqDto, \
+    FullUserRsDto
 
 
 def get_all_users(db: Session) -> list[UserRsDto]:
     users = db.scalars(select(User)).all()
 
     return [UserRsDto.model_validate(user) for user in users]
+
+def get_user_profile_by_id(user_id: UUID, db: Session) -> FullUserRsDto:
+    stmt = (
+        select(User, UserProfile)
+        .join(UserProfile, UserProfile.user_id == User.id)
+        .where(User.id == user_id)
+    )
+
+    result = db.execute(stmt).one_or_none()
+
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User profile not found",
+        )
+
+    user, profile = result
+
+    return FullUserRsDto(
+        id=user.id,
+        login=user.login,
+        email=user.email,
+        first_name=profile.first_name,
+        middle_name=profile.middle_name,
+        last_name=profile.last_name,
+        age=profile.age,
+        gender=profile.gender,
+        picture_id=profile.picture_id,
+    )
 
 def get_by_email(email: str, db: Session) -> UserRsDto | None:
     user = (db.query(User)
