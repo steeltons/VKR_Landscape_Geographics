@@ -224,10 +224,6 @@ class Territory(Base, EntityMixin):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    # Оставлено для обратной совместимости с текущей миграцией.
-    # Новая онтологическая связь territory <-> landscape задаётся через
-    # TerritoryLandscapeConnection, потому что территория может включать
-    # несколько ландшафтов.
     landscape_id: Mapped[int | None] = mapped_column(
         BigInteger,
         ForeignKey("landscapes.id"),
