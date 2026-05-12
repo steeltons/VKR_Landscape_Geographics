@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.components.ground.ground_component import GroundComponent
 from app.configs.db.dependencies import get_db
-from app.service.ground.ground_dto import (GroundCreateParamsRqDto, GroundRsDto, GroundUpdateParamsRqDto, GroundsRsDto)
+from app.service.ground.ground_dto import (GroundCreateParamsRqDto, GroundRsDto, GroundUpdateParamsRqDto)
 from app.service.ground.ground_dto_mapper import GroundDtoMapper
 
 router = APIRouter(
@@ -12,21 +12,12 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=GroundsRsDto)
-def get_grounds(
-    limit: int = Query(default=100, ge=1, le=500),
-    offset: int = Query(default=0, ge=0),
-    db: Session = Depends(get_db),
-) -> GroundsRsDto:
+@router.get("", response_model=list[GroundRsDto])
+def get_grounds(db: Session = Depends(get_db)) -> list[GroundRsDto]:
     component = GroundComponent(db)
-    grounds = component.get_all(limit=limit, offset=offset)
+    grounds = component.get_all()
 
-    return GroundDtoMapper.to_list_rs_dto(
-        grounds,
-        limit=limit,
-        offset=offset,
-    )
-
+    return GroundDtoMapper.to_list_rs_dto(grounds)
 
 @router.get("/{ground_id}", response_model=GroundRsDto)
 def get_ground_by_id(

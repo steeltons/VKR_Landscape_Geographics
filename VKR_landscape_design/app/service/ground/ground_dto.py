@@ -23,7 +23,7 @@ class GroundUpdateParamsRqDto(BaseModel):
 
 
 class GroundRsDto(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra= 'ignore')
 
     id: int
     name: str
@@ -32,10 +32,3 @@ class GroundRsDto(BaseModel):
     humidity: Decimal | None
     solidity: Decimal | None
     picture_id: UUID | None
-    is_active: bool
-
-
-class GroundsRsDto(BaseModel):
-    items: list[GroundRsDto]
-    limit: int
-    offset: int
