@@ -33,9 +33,3 @@ class SoilRsDto(BaseModel):
     profile: str | None
     picture_id: UUID | None
     is_active: bool
-
-
-class SoilsRsDto(BaseModel):
-    items: list[SoilRsDto]
-    limit: int
-    offset: int

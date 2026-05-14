@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.components.landscape.landscape_component import LandscapeComponent
 from app.configs.db.dependencies import get_db
-from app.service.landscape.landscape_dto import (LandscapeCreateParamsRqDto, LandscapeRsDto, LandscapeUpdateParamsRqDto, LandscapesRsDto)
+from app.service.landscape.landscape_dto import LandscapeCreateParamsRqDto, LandscapeRsDto, LandscapeUpdateParamsRqDto
 from app.service.landscape.landscape_dto_mapper import LandscapeDtoMapper
 
 logger = logging.getLogger(__name__)
@@ -13,23 +13,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/landscapes", tags=["landscapes"])
 
 
-@router.get("", response_model=LandscapesRsDto)
-def get_landscapes(
-    limit: int = Query(default=100, ge=1, le=500),
-    offset: int = Query(default=0, ge=0),
-    db: Session = Depends(get_db),
-) -> LandscapesRsDto:
-    params = {"limit": limit, "offset": offset}
-    logger.debug("START LandscapeController::get_landscapes %s", params)
+@router.get("", response_model= list[LandscapeRsDto])
+def get_landscapes(db: Session = Depends(get_db)) -> list[LandscapeRsDto]:
+    logger.debug("START LandscapeController::get_landscapes")
 
     component = LandscapeComponent(db)
     result = LandscapeDtoMapper.to_list_rs_dto(
-        component.get_all(limit=limit, offset=offset),
-        limit=limit,
-        offset=offset,
+        component.get_all()
     )
 
-    logger.debug("END LandscapeController::get_landscapes %s %s", params, result)
+    logger.debug("END LandscapeController::get_landscapes %s", result)
     return result
 
 

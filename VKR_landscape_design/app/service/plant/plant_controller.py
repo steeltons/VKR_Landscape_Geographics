@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.components.plant.plant_component import PlantComponent
 from app.configs.db.dependencies import get_db
-from app.service.plant.plant_dto import (PlantCreateParamsRqDto, PlantRsDto, PlantUpdateParamsRqDto, PlantsRsDto)
+from app.service.plant.plant_dto import PlantCreateParamsRqDto, PlantRsDto, PlantUpdateParamsRqDto
 from app.service.plant.plant_dto_mapper import PlantDtoMapper
 
 router = APIRouter(
@@ -12,20 +12,12 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=PlantsRsDto)
-def get_plants(
-    limit: int = Query(default=100, ge=1, le=500),
-    offset: int = Query(default=0, ge=0),
-    db: Session = Depends(get_db),
-) -> PlantsRsDto:
+@router.get("", response_model= list[PlantRsDto])
+def get_plants(db: Session = Depends(get_db)) -> list[PlantRsDto]:
     component = PlantComponent(db)
-    plants = component.get_all(limit=limit, offset=offset)
+    plants = component.get_all()
 
-    return PlantDtoMapper.to_list_rs_dto(
-        plants,
-        limit=limit,
-        offset=offset,
-    )
+    return PlantDtoMapper.to_list_rs_dto(plants)
 
 
 @router.get("/{plant_id}", response_model=PlantRsDto)

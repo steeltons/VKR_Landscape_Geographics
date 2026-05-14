@@ -26,13 +26,11 @@ class WaterRepository:
 
         return list(self.db.scalars(stmt).all())
 
-    def get_all(self, limit: int = 100, offset: int = 0) -> list[Water]:
+    def get_all(self) -> list[Water]:
         stmt = (
             select(Water)
             .where(Water.is_active.is_(True))
             .order_by(Water.id)
-            .limit(limit)
-            .offset(offset)
         )
         return list(self.db.scalars(stmt).all())
 

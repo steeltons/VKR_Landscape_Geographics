@@ -16,16 +16,9 @@ class WaterUpdateParamsRqDto(BaseModel):
 
 
 class WaterRsDto(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra= 'ignore')
 
     id: int
     name: str
     description: str | None
     picture_id: UUID | None
-    is_active: bool
-
-
-class WatersRsDto(BaseModel):
-    items: list[WaterRsDto]
-    limit: int
-    offset: int

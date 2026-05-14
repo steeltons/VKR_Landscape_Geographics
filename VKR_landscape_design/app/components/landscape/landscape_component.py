@@ -19,10 +19,10 @@ class LandscapeComponent:
             entity = self.repository.get_by_id(landscape_id)
             return LandscapeComponentMapper.to_dc(entity) if entity else None
 
-    def get_all(self, limit: int = 100, offset: int = 0) -> list[LandscapeDC]:
+    def get_all(self) -> list[LandscapeDC]:
         with self.db.begin_nested():
             return LandscapeComponentMapper.to_dc_list(
-                self.repository.get_all(limit=limit, offset=offset)
+                self.repository.get_all()
             )
 
     def create(

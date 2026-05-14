@@ -1,5 +1,5 @@
 from app.components.soil.soil_dc import SoilDC
-from app.service.soil.dto.soil_dto import SoilsRsDto, SoilRsDto
+from app.service.soil.soil_dto import SoilRsDto
 
 
 class SoilDtoMapper:
@@ -17,14 +17,5 @@ class SoilDtoMapper:
         )
 
     @staticmethod
-    def to_list_rs_dto(
-        items: list[SoilDC],
-        *,
-        limit: int,
-        offset: int,
-    ) -> SoilsRsDto:
-        return SoilsRsDto(
-            items=[SoilDtoMapper.to_rs_dto(item) for item in items],
-            limit=limit,
-            offset=offset,
-        )
+    def to_list_rs_dto(items: list[SoilDC]) -> list[SoilRsDto]:
+        return [SoilDtoMapper.to_rs_dto(item) for item in items]

@@ -24,10 +24,10 @@ class WaterComponent:
                 self.repository.get_by_landscape_id(landscape_id)
             )
 
-    def get_all(self, limit: int = 100, offset: int = 0) -> list[WaterDC]:
+    def get_all(self) -> list[WaterDC]:
         with self.db.begin_nested():
             return WaterComponentMapper.to_dc_list(
-                self.repository.get_all(limit=limit, offset=offset)
+                self.repository.get_all()
             )
 
     def create(

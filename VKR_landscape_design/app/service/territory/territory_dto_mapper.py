@@ -10,7 +10,6 @@ from app.components.soil.soil_dc import SoilDC
 from app.components.territory.territory_dc import TerritoryDC
 from app.components.water.water_dc import WaterDC
 from app.service.territory.territory_dto import (
-    TerritoriesRsDto,
     TerritoryPointClimateRsDto,
     TerritoryPointFoundationRsDto,
     TerritoryPointGroundRsDto,
@@ -30,17 +29,8 @@ class TerritoryDtoMapper:
         return TerritoryRsDto(**asdict(dc))
 
     @staticmethod
-    def to_list_rs_dto(
-        items: list[TerritoryDC],
-        *,
-        limit: int,
-        offset: int,
-    ) -> TerritoriesRsDto:
-        return TerritoriesRsDto(
-            items=[TerritoryDtoMapper.to_rs_dto(item) for item in items],
-            limit=limit,
-            offset=offset,
-        )
+    def to_list_rs_dto(items: list[TerritoryDC]) -> list[TerritoryRsDto]:
+        return [TerritoryDtoMapper.to_rs_dto(item) for item in items]
 
     @staticmethod
     def to_point_search_rs_dto(

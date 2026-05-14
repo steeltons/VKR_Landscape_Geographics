@@ -33,10 +33,10 @@ class TerritoryComponent:
 
             return TerritoryComponentMapper.to_dc(entity)
 
-    def get_all(self, limit: int = 100, offset: int = 0) -> list[TerritoryDC]:
+    def get_all(self) -> list[TerritoryDC]:
         with self.db.begin_nested():
             return TerritoryComponentMapper.to_dc_list(
-                self.repository.get_all(limit=limit, offset=offset)
+                self.repository.get_all()
             )
 
     def create(

@@ -9,6 +9,7 @@ from app.persistence.models import TerritoryGeometry
 class TerritoryGeometryRow(NamedTuple):
     territory_id: int
     geojson: str
+    color: str
 
 
 class TerritoryGeometryRepository:
@@ -19,6 +20,7 @@ class TerritoryGeometryRepository:
         stmt = (
             select(
                 TerritoryGeometry.territory_id,
+                TerritoryGeometry.color,
                 func.ST_AsGeoJSON(TerritoryGeometry.geom).label("geojson"),
             )
             .where(TerritoryGeometry.is_active.is_(True))
@@ -30,6 +32,7 @@ class TerritoryGeometryRepository:
         return [
             TerritoryGeometryRow(
                 territory_id=row.territory_id,
+                color= row.color,
                 geojson=row.geojson,
             )
             for row in rows

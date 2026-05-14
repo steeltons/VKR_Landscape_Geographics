@@ -3,22 +3,17 @@ from sqlalchemy.orm import Session
 
 from app.components.foundation.foundation_component import FoundationComponent
 from app.configs.db.dependencies import get_db
-from app.service.foundation.foundation_dto import (FoundationCreateParamsRqDto, FoundationRsDto,
-                                                   FoundationUpdateParamsRqDto, FoundationsRsDto)
+from app.service.foundation.foundation_dto import FoundationCreateParamsRqDto, FoundationRsDto, FoundationUpdateParamsRqDto
 from app.service.foundation.foundation_dto_mapper import FoundationDtoMapper
 
 router = APIRouter(prefix="/api/v1/foundations", tags=["foundations"])
 
 
-@router.get("", response_model=FoundationsRsDto)
-def get_foundations(
-    limit: int = Query(default=100, ge=1, le=500),
-    offset: int = Query(default=0, ge=0),
-    db: Session = Depends(get_db),
-) -> FoundationsRsDto:
+@router.get("", response_model= list[FoundationRsDto])
+def get_foundations(db: Session = Depends(get_db)) -> list[FoundationRsDto]:
     component = FoundationComponent(db)
-    items = component.get_all(limit=limit, offset=offset)
-    return FoundationDtoMapper.to_list_rs_dto(items, limit=limit, offset=offset)
+    items = component.get_all()
+    return FoundationDtoMapper.to_list_rs_dto(items)
 
 
 @router.get("/{foundation_id}", response_model=FoundationRsDto)

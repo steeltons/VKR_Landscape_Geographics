@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.components.soil.soil_component import SoilComponent
 from app.configs.db.dependencies import get_db
-from app.service.soil.dto.soil_dto import (SoilCreateParamsRqDto, SoilRsDto, SoilUpdateParamsRqDto, SoilsRsDto)
+from app.service.soil.soil_dto import SoilCreateParamsRqDto, SoilRsDto, SoilUpdateParamsRqDto
 from app.service.soil.soil_dto_mapper import SoilDtoMapper
 
 router = APIRouter(
@@ -12,28 +12,17 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=SoilsRsDto)
-def get_soils(
-    limit: int = Query(default=100, ge=1, le=500),
-    offset: int = Query(default=0, ge=0),
-    db: Session = Depends(get_db),
-) -> SoilsRsDto:
+@router.get("", response_model= list[SoilRsDto])
+def get_soils(db: Session = Depends(get_db)) -> list[SoilRsDto]:
     component = SoilComponent(db)
 
     soils = component.get_all()
 
-    return SoilDtoMapper.to_list_rs_dto(
-        soils,
-        limit=limit,
-        offset=offset,
-    )
+    return SoilDtoMapper.to_list_rs_dto(soils)
 
 
 @router.get("/{soil_id}", response_model=SoilRsDto)
-def get_soil_by_id(
-    soil_id: int,
-    db: Session = Depends(get_db),
-) -> SoilRsDto:
+def get_soil_by_id(soil_id: int, db: Session = Depends(get_db)) -> SoilRsDto:
     component = SoilComponent(db)
 
     soil = component.get_by_id(soil_id)

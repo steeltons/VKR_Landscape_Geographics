@@ -26,13 +26,11 @@ class FoundationRepository:
 
         return list(self.db.scalars(stmt).all())
 
-    def get_all(self, limit: int = 100, offset: int = 0) -> list[Foundation]:
+    def get_all(self) -> list[Foundation]:
         stmt = (
             select(Foundation)
             .where(Foundation.is_active.is_(True))
             .order_by(Foundation.id)
-            .limit(limit)
-            .offset(offset)
         )
         return list(self.db.scalars(stmt).all())
 

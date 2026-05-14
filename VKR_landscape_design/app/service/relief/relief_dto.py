@@ -22,10 +22,3 @@ class ReliefRsDto(BaseModel):
     name: str
     description: str | None
     picture_id: UUID | None
-    is_active: bool
-
-
-class ReliefsRsDto(BaseModel):
-    items: list[ReliefRsDto]
-    limit: int
-    offset: int

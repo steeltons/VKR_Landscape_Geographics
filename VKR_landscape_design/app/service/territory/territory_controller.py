@@ -5,8 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.components.territory.territory_component import TerritoryComponent
 from app.configs.db.dependencies import get_db
-from app.service.territory.territory_dto import (TerritoriesRsDto, TerritoryCreateParamsRqDto, TerritoryRsDto,
-                                                 TerritoryUpdateParamsRqDto, TerritoryPointSearchRsDto)
+from app.service.territory.territory_dto import TerritoryCreateParamsRqDto, TerritoryRsDto, TerritoryUpdateParamsRqDto, TerritoryPointSearchRsDto
 from app.service.territory.territory_dto_mapper import TerritoryDtoMapper
 from app.service.territory.territory_service import TerritoryService
 
@@ -15,23 +14,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/territories", tags=["territories"])
 
 
-@router.get("", response_model=TerritoriesRsDto)
-def get_territories(
-    limit: int = Query(default=100, ge=1, le=500),
-    offset: int = Query(default=0, ge=0),
-    db: Session = Depends(get_db),
-) -> TerritoriesRsDto:
-    params = {"limit": limit, "offset": offset}
-    logger.debug("START TerritoryController::get_territories %s", params)
+@router.get("", response_model= list[TerritoryRsDto])
+def get_territories(db: Session = Depends(get_db)) -> list[TerritoryRsDto]:
+    logger.debug("START TerritoryController::get_territories")
 
     component = TerritoryComponent(db)
-    result = TerritoryDtoMapper.to_list_rs_dto(
-        component.get_all(limit=limit, offset=offset),
-        limit=limit,
-        offset=offset,
-    )
+    result = TerritoryDtoMapper.to_list_rs_dto(component.get_all())
 
-    logger.debug("END TerritoryController::get_territories %s %s", params, result)
+    logger.debug("END TerritoryController::get_territories %s",  result)
     return result
 
 

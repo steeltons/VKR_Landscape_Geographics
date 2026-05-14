@@ -23,9 +23,3 @@ class PlantRsDto(BaseModel):
     description: str | None
     picture_id: UUID | None
     is_active: bool
-
-
-class PlantsRsDto(BaseModel):
-    items: list[PlantRsDto]
-    limit: int
-    offset: int

@@ -19,7 +19,39 @@ services:
       start_period: 10s
     volumes:
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
-#    Для локального запуска, чтобы БД оставалась в том же состоянии
-#    volumes:
-#      - postgres_data:/var/lib/postgresql/data
 
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: olms_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: OLMS_USER
+      MINIO_ROOT_PASSWORD: OLMS_PASSWORD
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    container_name: olms_minio_init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 olms_minio olms_minio_password;
+      mc mb --ignore-existing local/olms-files;
+      mc anonymous set none local/olms-files;
+      exit 0;
+      "
+
+volumes:
+  minio_data:

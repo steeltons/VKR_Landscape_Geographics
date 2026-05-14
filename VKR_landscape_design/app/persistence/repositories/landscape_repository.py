@@ -15,13 +15,11 @@ class LandscapeRepository:
         )
         return self.db.scalar(stmt)
 
-    def get_all(self, limit: int = 100, offset: int = 0) -> list[Landscape]:
+    def get_all(self) -> list[Landscape]:
         stmt = (
             select(Landscape)
             .where(Landscape.is_active.is_(True))
             .order_by(Landscape.id)
-            .limit(limit)
-            .offset(offset)
         )
         return list(self.db.scalars(stmt).all())
 

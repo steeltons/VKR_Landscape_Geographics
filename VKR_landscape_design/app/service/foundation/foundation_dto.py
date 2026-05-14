@@ -26,10 +26,3 @@ class FoundationRsDto(BaseModel):
     description: str | None
     roof_root_depth: Decimal | None
     picture_id: UUID | None
-    is_active: bool
-
-
-class FoundationsRsDto(BaseModel):
-    items: list[FoundationRsDto]
-    limit: int
-    offset: int

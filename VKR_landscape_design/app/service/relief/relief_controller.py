@@ -3,28 +3,21 @@ from sqlalchemy.orm import Session
 
 from app.components.relief.relief_component import ReliefComponent
 from app.configs.db.dependencies import get_db
-from app.service.relief.relief_dto import (ReliefCreateParamsRqDto, ReliefRsDto, ReliefUpdateParamsRqDto, ReliefsRsDto)
+from app.service.relief.relief_dto import ReliefCreateParamsRqDto, ReliefRsDto, ReliefUpdateParamsRqDto
 from app.service.relief.relief_dto_mapper import ReliefDtoMapper
 
 router = APIRouter(prefix="/api/v1/reliefs", tags=["reliefs"])
 
 
-@router.get("", response_model=ReliefsRsDto)
-def get_reliefs(
-    limit: int = Query(default=100, ge=1, le=500),
-    offset: int = Query(default=0, ge=0),
-    db: Session = Depends(get_db),
-) -> ReliefsRsDto:
+@router.get("", response_model= list[ReliefRsDto])
+def get_reliefs(db: Session = Depends(get_db)) -> list[ReliefRsDto]:
     component = ReliefComponent(db)
-    items = component.get_all(limit=limit, offset=offset)
-    return ReliefDtoMapper.to_list_rs_dto(items, limit=limit, offset=offset)
+    items = component.get_all()
+    return ReliefDtoMapper.to_list_rs_dto(items)
 
 
 @router.get("/{relief_id}", response_model=ReliefRsDto)
-def get_relief_by_id(
-    relief_id: int,
-    db: Session = Depends(get_db),
-) -> ReliefRsDto:
+def get_relief_by_id(relief_id: int, db: Session = Depends(get_db)) -> ReliefRsDto:
     component = ReliefComponent(db)
     item = component.get_by_id(relief_id)
 

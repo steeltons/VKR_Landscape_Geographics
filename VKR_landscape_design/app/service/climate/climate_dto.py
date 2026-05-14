@@ -22,9 +22,3 @@ class ClimateRsDto(BaseModel):
     name: str
     description: str | None
     picture_id: UUID | None
-
-
-class ClimatesRsDto(BaseModel):
-    items: list[ClimateRsDto]
-    limit: int
-    offset: int

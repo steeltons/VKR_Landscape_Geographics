@@ -1,4 +1,3 @@
-import hashlib
 import json
 
 from app.components.coordinates.coordinates_dc import (
@@ -32,7 +31,7 @@ class CoordinatesComponentMapper:
             items.append(
                 TerritoryCoordinatesItemDC(
                     territory_id=row.territory_id,
-                    color=CoordinatesComponentMapper._build_color(row.territory_id),
+                    color=row.color,
                     polygons=polygons,
                 )
             )
@@ -68,8 +67,3 @@ class CoordinatesComponentMapper:
             )
             for index, coordinate in enumerate(polygon_coordinates)
         ]
-
-    @staticmethod
-    def _build_color(territory_id: int) -> str:
-        digest = hashlib.md5(str(territory_id).encode("utf-8")).hexdigest()
-        return f"#{digest[:6]}"

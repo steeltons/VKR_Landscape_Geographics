@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.components.climate.climate_component import ClimateComponent
 from app.configs.db.dependencies import get_db
-from app.service.climate.climate_dto import (ClimateCreateParamsRqDto, ClimateRsDto, ClimateUpdateParamsRqDto, ClimatesRsDto)
+from app.service.climate.climate_dto import ClimateCreateParamsRqDto, ClimateRsDto, ClimateUpdateParamsRqDto
 from app.service.climate.climate_dto_mapper import ClimateDtoMapper
 
 logger = logging.getLogger(__name__)
@@ -13,23 +13,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/climates", tags=["climates"])
 
 
-@router.get("", response_model=ClimatesRsDto)
-def get_climates(
-    limit: int = Query(default=100, ge=1, le=500),
-    offset: int = Query(default=0, ge=0),
-    db: Session = Depends(get_db),
-) -> ClimatesRsDto:
-    params = {"limit": limit, "offset": offset}
-    logger.debug("START ClimateController::get_climates %s", params)
+@router.get("", response_model= list[ClimateRsDto])
+def get_climates(db: Session = Depends(get_db)) -> list[ClimateRsDto]:
+    logger.debug("START ClimateController::get_climates")
 
     component = ClimateComponent(db)
-    result = ClimateDtoMapper.to_list_rs_dto(
-        component.get_all(limit=limit, offset=offset),
-        limit=limit,
-        offset=offset,
-    )
+    result = ClimateDtoMapper.to_list_rs_dto(component.get_all())
 
-    logger.debug("END ClimateController::get_climates %s %s", params, result)
+    logger.debug("END ClimateController::get_climates %s", result)
     return result
 
 

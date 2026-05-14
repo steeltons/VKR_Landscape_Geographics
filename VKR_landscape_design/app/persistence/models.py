@@ -256,6 +256,9 @@ class TerritoryGeometry(Base):
     )
 
     version: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
+
+    color: Mapped[str] = mapped_column(String(7), nullable=False, default="#3388FF")
+
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
 
     territory: Mapped["Territory"] = relationship(back_populates="geometries")

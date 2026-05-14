@@ -27,13 +27,11 @@ class PlantRepository:
 
         return list(self.db.scalars(stmt).all())
 
-    def get_all(self, limit: int = 100, offset: int = 0) -> list[Plant]:
+    def get_all(self) -> list[Plant]:
         stmt = (
             select(Plant)
             .where(Plant.is_active.is_(True))
             .order_by(Plant.id)
-            .limit(limit)
-            .offset(offset)
         )
         return list(self.db.scalars(stmt).all())
 

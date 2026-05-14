@@ -25,10 +25,10 @@ class FoundationComponent:
                 self.repository.get_by_landscape_id(landscape_id)
             )
 
-    def get_all(self, limit: int = 100, offset: int = 0) -> list[FoundationDC]:
+    def get_all(self) -> list[FoundationDC]:
         with self.db.begin_nested():
             return FoundationComponentMapper.to_dc_list(
-                self.repository.get_all(limit=limit, offset=offset)
+                self.repository.get_all()
             )
 
     def create(

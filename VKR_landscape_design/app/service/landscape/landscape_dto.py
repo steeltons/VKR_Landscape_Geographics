@@ -35,10 +35,3 @@ class LandscapeRsDto(BaseModel):
     area_percentage: Decimal | None
     kr: Decimal | None
     picture_id: UUID | None
-    is_active: bool
-
-
-class LandscapesRsDto(BaseModel):
-    items: list[LandscapeRsDto]
-    limit: int
-    offset: int

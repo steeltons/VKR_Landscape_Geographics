@@ -15,13 +15,11 @@ class TerritoryRepository:
         )
         return self.db.scalar(stmt)
 
-    def get_all(self, limit: int = 100, offset: int = 0) -> list[Territory]:
+    def get_all(self) -> list[Territory]:
         stmt = (
             select(Territory)
             .where(Territory.is_active.is_(True))
             .order_by(Territory.id)
-            .limit(limit)
-            .offset(offset)
         )
         return list(self.db.scalars(stmt).all())
 

@@ -26,9 +26,9 @@ class PlantComponent:
                 self.repository.get_all_by_landscape_id(landscape_id)
             )
 
-    def get_all(self, limit: int = 100, offset: int = 0) -> list[PlantDC]:
+    def get_all(self) -> list[PlantDC]:
         with self.db.begin_nested():
-            entities = self.repository.get_all(limit=limit, offset=offset)
+            entities = self.repository.get_all()
             return PlantComponentMapper.to_dc_list(entities)
 
     def create(
