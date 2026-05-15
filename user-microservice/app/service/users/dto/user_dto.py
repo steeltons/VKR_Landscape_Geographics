@@ -50,3 +50,15 @@ class FullyCreateUserRqDto(BaseModel):
     middle_name: str = Field(default_factory= str)
     age: int = Field(default_factory= int)
     gender: str = Field(default_factory= str)
+
+class UpdateUserProfileRqDto(BaseModel):
+
+    model_config = ConfigDict(from_attributes= True)
+
+    email: str
+    first_name: str
+    last_name: str
+    middle_name: str
+    age: int
+    gender: str
+    picture_id: uuid.UUID | None = None

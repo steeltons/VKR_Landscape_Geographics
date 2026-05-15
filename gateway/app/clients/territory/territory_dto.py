@@ -10,7 +10,6 @@ class TerritoryRsDto(BaseModel):
     id: int
     description: str | None
     landscape_id: int | None
-    is_active: bool
 
 
 class TerritoriesRsDto(BaseModel):

@@ -11,9 +11,9 @@ from app.service.decorators.require_authorities_decorator import require_authori
 
 from app.db.dependencies import get_db
 from app.service.users.dto.user_dto import UserRsDto, AddUserRqDto, UserAuthoritiesRqDto, FullyCreateUserRqDto, \
-    FullUserRsDto
+    FullUserRsDto, UpdateUserProfileRqDto
 from app.service.users.user_service import get_all_users, get_by_email, get_by_login, add_user, grant_authorities, \
-    revoke_authorities, add_full_user, get_user_profile_by_id
+    revoke_authorities, add_full_user, get_user_profile_by_id, update_user_profile
 from app.utils.jwt_utils import get_authorities
 
 logger = logging.getLogger(__name__)
@@ -91,6 +91,12 @@ def add_new_full_user(body: FullyCreateUserRqDto, db: Session = Depends(get_db),
     result = add_full_user(body, db)
     logger.info("END user_controller::add_full_user login=%s, body=%s, result=%s",principal.login, body, result)
     return result
+
+@router.put("/{user_id}/profile", dependencies= [Depends(require_access_token)])
+def update_profile(user_id: uuid.UUID, body: UpdateUserProfileRqDto, db: Session = Depends(get_db)):
+    logger.info("START user_controller::update_profile")
+    update_user_profile(user_id, body, db)
+    logger.info("END user_controller::update_profile")
 
 @router.get("/email/{email}", response_model=list[UserRsDto])
 def get_user_by_email(email: str, db: Session = Depends(get_db)) -> UserRsDto:

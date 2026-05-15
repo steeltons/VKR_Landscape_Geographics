@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.models.models import User, UserAuthorityType, UserAuthority, UserProfile
 from app.service.users.dto.user_dto import UserRsDto, AddUserRqDto, UserAuthoritiesRqDto, FullyCreateUserRqDto, \
-    FullUserRsDto
+    FullUserRsDto, UpdateUserProfileRqDto
 
 
 def get_all_users(db: Session) -> list[UserRsDto]:
@@ -20,6 +20,7 @@ def get_user_profile_by_id(user_id: UUID, db: Session) -> FullUserRsDto:
         select(User, UserProfile)
         .join(UserProfile, UserProfile.user_id == User.id)
         .where(User.id == user_id)
+        .where(UserProfile.is_active.is_(True))
     )
 
     result = db.execute(stmt).one_or_none()
@@ -137,6 +138,26 @@ def add_full_user(body: FullyCreateUserRqDto, db: Session) -> UserRsDto:
     __add_user_password(body.password, main_user, db)
 
     return UserRsDto.model_validate(main_user)
+
+def update_user_profile(user_id: UUID, body: UpdateUserProfileRqDto, db: Session):
+    UpdateUserProfileRqDto.model_validate(body)
+
+    existed_profile = (db.query(UserProfile)
+        .filter((UserProfile.user_id == user_id))
+        .filter(UserProfile.is_active.is_(True))
+        .first()
+    )
+
+    if existed_profile:
+        existed_profile.is_active = False
+        db.add(existed_profile)
+        db.flush()
+
+    user_profile = UserProfile(first_name= body.first_name, middle_name= body.middle_name, last_name= body.last_name, gender= body.gender, picture_id= body.picture_id, age= body.age, user_id= user_id)
+    db.add(user_profile)
+    db.flush()
+
+    db.commit()
 
 def get_by_login(login: str, db: Session) -> UserRsDto | None:
     user = (db.query(User)
