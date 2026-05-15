@@ -18,6 +18,7 @@ class UserAuthorityType(enum.Enum):
     REVOKE_PERMISSIONS = ('REVOKE_PERMISSIONS', 'Отзыв прав')
     EDIT_DICTIONARY = ("EDIT_DICTIONARY", "Внесение правок в справочник")
     DELETE_DICTIONARY = ("DELETE_DICTIONARY", "Удаление данных из справочника")
+    ML_ACCESS = ("ML_ACCESS", "Доступ к манипуляции с моделью МО")
 
     def __new__(cls, system_name: str, display_name: str):
         obj = object.__new__(cls)

@@ -298,7 +298,7 @@ async def proxy_dictionary(
 
 
 @router.api_route(
-    "/ml/{path:path}",
+    "/ml-microservice/{path:path}",
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
 )
 async def proxy_ml(
@@ -308,5 +308,5 @@ async def proxy_ml(
     return await proxy_client.forward(
         request=request,
         target_base_url=settings.ml_service_url,
-        path=f"/api/v1/{path}",
+        path="/" + path,
     )
