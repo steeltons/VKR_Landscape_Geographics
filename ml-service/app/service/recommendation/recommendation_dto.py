@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel, Field
 
 
@@ -26,7 +28,22 @@ class ExplanationRsDto(BaseModel):
 
 
 class RecommendationRsDto(BaseModel):
+    request_id: UUID
     score: float
     level: str
     recommendation: str
     explanation: ExplanationRsDto
+
+
+# --- Feedback DTOs ---
+
+
+class FeedbackRqDto(BaseModel):
+    rating: int = Field(ge=1, le=10, description="Оценка рекомендации от 1 до 10")
+
+
+class FeedbackRsDto(BaseModel):
+    request_id: UUID
+    rating: int
+    rated_at: str
+    message: str = "Спасибо за оценку!"

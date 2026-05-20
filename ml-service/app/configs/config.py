@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     dictionary_microservice_timeout: int = 120
 
     training_database_url: str = "postgresql+psycopg://geo:test@localhost:6000/olms_geo"
+    database_url: str = "postgresql+psycopg://geo:test@localhost:6000/olms_ml"
+    database_user: str = "root"
+    database_password: str = "root"
 
     model_minio_root_dir: str = "ml_service/models"
     model_current_version: str = "default"
