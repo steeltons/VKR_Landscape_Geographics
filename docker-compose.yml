@@ -20,6 +20,28 @@ services:
     volumes:
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
 
+  dictionary-microservice:
+    build:
+      context: .
+      dockerfile: VKR_landscape_design/Dockerfile
+    container_name: dictionary-microservice
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      APP_NAME: "Landscape GIS API"
+      APP_HOST: "0.0.0.0"
+      APP_PORT: 8000
+      APP_DEBUG: "true"
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: olms_geo
+      DB_USER: geo
+      DB_PASSWORD: test
+      CORS_ORIGINS: "http://localhost:3000"
+
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     container_name: olms_minio
