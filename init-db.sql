@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- Тестовые учётные записи
 CREATE USER olms_people_keeper WITH PASSWORD '5uthU]evx2RYV-2B].hMsH=aU>ia-2!9';
 CREATE USER olms_knowledge_keeper WITH PASSWORD 'LjC_W_:V2}s.d6+uY+xae}r~#tovUmZ0';
-CREATE USER olms_ml_keeper WITH PASSWORD 'bvUO–XEWnwgdH.)yt:qy#zS[{ljo8G3s';
+CREATE USER olms_ml_keeper WITH PASSWORD 'bvUO-XEWnwgdH.)yt:qy#zS[{ljo8G3s';
 
 -- Создание БД
 CREATE DATABASE olms_people OWNER olms_people_keeper;

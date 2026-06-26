@@ -40,7 +40,7 @@ services:
       DB_NAME: olms_geo
       DB_USER: geo
       DB_PASSWORD: test
-      CORS_ORIGINS: "http://localhost:3000"
+      CORS_ORIGINS: "http://localhost:3000,http://localhost"
 
   user-microservice:
     build:
@@ -67,7 +67,7 @@ services:
       DB_NAME: olms_people
       DB_USER: olms_people_keeper
       DB_PASSWORD: 5uthU]evx2RYV-2B].hMsH=aU>ia-2!9
-      CORS_ORIGINS: "http://localhost:3000"
+      CORS_ORIGINS: "http://localhost:3000,http://localhost"
 
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
@@ -96,11 +96,84 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      mc alias set local http://minio:9000 olms_minio olms_minio_password;
+      mc alias set local http://minio:9000 OLMS_USER OLMS_PASSWORD;
       mc mb --ignore-existing local/olms-files;
       mc anonymous set none local/olms-files;
       exit 0;
       "
+
+  ml-microservice:
+    build:
+      context: .
+      dockerfile: ml-service/Dockerfile
+    container_name: ml-microservice
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - "8030:8030"
+    environment:
+      APP_NAME: "Landscape GIS ML Service"
+      APP_HOST: "0.0.0.0"
+      APP_PORT: 8030
+      APP_DEBUG: "true"
+      DEBUG_LEVEL: "info"
+      GATEWAY_URL: "http://gateway:8080"
+      DICTIONARY_MICROSERVICE_BASE_URL: "http://dictionary-microservice:8000"
+      REQUEST_TIMEOUT_SECONDS: 120
+      DICTIONARY_MICROSERVICE_TIMEOUT: 120
+      TRAINING_DATABASE_URL: "postgresql+psycopg://geo:test@db:6000/olms_geo"
+      DATABASE_URL: "postgresql+psycopg://olms_ml_keeper:bvUO-XEWnwgdH.)yt:qy#zS[{ljo8G3s@db:5432/olms_ml"
+      DATABASE_USER: "olms_ml_keeper"
+      DATABASE_PASSWORD: "bvUO-XEWnwgdH.)yt:qy#zS[{ljo8G3s"
+      MODEL_MINIO_ROOT_DIR: "ml_service/models"
+      MODEL_CURRENT_VERSION: "default"
+      MODEL_LOCAL_TMP_DIR: "/tmp/olms-ml-service"
+      CATBOOST_TRAIN_DIR: "/tmp/olms-ml-service/catboost_info"
+      MODEL_FAIL_FAST_ON_STARTUP: "false"
+      CORS_ORIGINS: "http://localhost:3000,http://localhost"
+      MINIO_ENDPOINT: "http://minio:9000"
+      MINIO_ACCESS_KEY: "OLMS_USER"
+      MINIO_SECRET_KEY: "OLMS_PASSWORD"
+      MINIO_BUCKET_NAME: "olms-files"
+      MINIO_AUTO_CREATE_BUCKET: "true"
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    container_name: gateway
+    depends_on:
+      minio:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      APP_NAME: "Landscape GIS Gateway"
+      APP_HOST: "0.0.0.0"
+      APP_PORT: 8080
+      APP_DEBUG: "true"
+      USERS_SERVICE_URL: "http://user-microservice:8010"
+      DICTIONARY_SERVICE_URL: "http://dictionary-microservice:8000"
+      ML_SERVICE_URL: "http://ml-microservice:8030"
+      REQUEST_TIMEOUT_SECONDS: 120
+      CORS_ORIGINS: "http://localhost:3000,http://localhost"
+
+  frontend:
+    build:
+      context: VKR_landscape_react_front
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_BASE_URL: "http://gateway:8080"
+    container_name: frontend
+    depends_on:
+      - gateway
+    ports:
+      - "3000:80"
+    environment:
+      REACT_APP_API_BASE_URL: "http://gateway:8080"
 
 volumes:
   minio_data:
