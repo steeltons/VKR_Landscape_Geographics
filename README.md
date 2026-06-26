@@ -8,56 +8,63 @@
 
 Научный руководитель: Артемьева Ирина Леонидовна
 
-## Запуск dictionary-microservice
+## dictionary-microservice (VKR_landscape_design)
 
-### Подготовка окружения
+Справочный микросервис ландшафтных данных (порт 8000).
 
-1. Создать виртуальное окружение Python:
-
-```bash
-python3 -m venv .venv
-```
-
-2. Активировать виртуальное окружение:
+### Ручной запуск
 
 ```bash
-source .venv/bin/activate
-```
-
-3. Установить кастомную библиотеку jwt-guard из соседней директории:
-
-```bash
-pip install -e ../jwt-guard
-```
-
-4. Установить зависимости из requirements.txt:
-
-```bash
-pip install -r requirements.txt
-```
-
-### Запуск базы данных
-
-База данных запускается через Docker Compose из корня проекта:
-
-```bash
+# 1. Запустить БД
 docker compose up db -d
-```
 
-### Применение миграций
+# 2. Перейти в микросервис
+cd VKR_landscape_design
 
-После запуска базы данных выполнить миграции:
+# 3. Подготовить окружение
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ../jwt-guard
+pip install -r requirements.txt
 
-```bash
+# 4. Применить миграции
 alembic upgrade head
-```
 
-### Запуск микросервиса
-
-Запустить сервер через uvicorn:
-
-```bash
+# 5. Запустить
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Микросервис будет доступен по адресу http://localhost:8000, документация API — http://localhost:8000/docs.
+## user-microservice
+
+Микросервис управления пользователями и авторизации (порт 8010).
+
+### Подготовка ключей
+
+Перед запуском сгенерировать RSA-ключи для JWT:
+
+```bash
+cd user-microservice
+bash generate_keys.sh
+```
+
+### Ручной запуск
+
+```bash
+# 1. Запустить БД
+docker compose up db -d
+
+# 2. Перейти в микросервис
+cd user-microservice
+
+# 3. Подготовить окружение
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ../jwt-guard
+pip install -r requirements.txt
+
+# 4. Применить миграции
+alembic upgrade head
+
+# 5. Запустить
+uvicorn app.main:app --host 0.0.0.0 --port 8010 --reload
+```

@@ -17,3 +17,11 @@ CREATE DATABASE olms_ml OWNER olms_ml_keeper;
 GRANT ALL PRIVILEGES ON DATABASE olms_people TO olms_people_keeper;
 GRANT ALL PRIVILEGES ON DATABASE olms_knowledge TO olms_knowledge_keeper;
 GRANT ALL PRIVILEGES ON DATABASE olms_ml TO olms_ml_keeper;
+
+-- Подключение к olms_people и установка pgcrypto
+\c olms_people
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Подключение к olms_knowledge и установка pgcrypto
+\c olms_knowledge
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
