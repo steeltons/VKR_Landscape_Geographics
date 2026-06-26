@@ -1,11 +1,18 @@
+import logging
+
+from app.ml.llm.llm_service import get_llm_service
 from app.ml.pipelines.evidence_builder import EvidenceBuilder
 from app.ml.pipelines.recommendation_text_builder import RecommendationTextBuilder
+
+
+logger = logging.getLogger(__name__)
 
 
 class ExplanationBuilder:
     def __init__(self) -> None:
         self.evidence_builder = EvidenceBuilder()
         self.text_builder = RecommendationTextBuilder()
+        self._llm_service = None
 
     def build(
         self,
@@ -16,10 +23,96 @@ class ExplanationBuilder:
         task_type: str,
         target: str | None,
     ) -> dict:
+        level = self._build_level(score)
+
+        evidence = self.evidence_builder.build(
+            data=data,
+            features=features,
+            task_type=task_type,
+        )
+
+        # --- Попытка сгенерировать объяснение через LLM ---
+        llm_result = self._try_llm(
+            features=features,
+            evidence=evidence,
+            score=score,
+            task_type=task_type,
+            level=level,
+            target=target,
+        )
+
+        if llm_result is not None:
+            logger.info(
+                "Explanation generated via LLM: score=%.4f task=%s",
+                score,
+                task_type,
+            )
+            return {
+                "summary": llm_result["summary"],
+                "level": level,
+                "recommendation": llm_result["recommendation"],
+                "reasons": llm_result["reasons"],
+                "warnings": llm_result["warnings"],
+                "evidence": evidence,
+            }
+
+        # --- Fallback: rule-based объяснение ---
+        logger.info(
+            "LLM explanation unavailable, falling back to rule-based: score=%.4f task=%s",
+            score,
+            task_type,
+        )
+
+        return self._build_rule_based(
+            features=features,
+            score=score,
+            level=level,
+            task_type=task_type,
+            target=target,
+            evidence=evidence,
+        )
+
+    def _try_llm(
+        self,
+        *,
+        features: dict,
+        evidence: list[dict],
+        score: float,
+        task_type: str,
+        level: str,
+        target: str | None,
+    ) -> dict | None:
+        """Пытается получить объяснение от LLM. Возвращает None при неудаче."""
+        try:
+            if self._llm_service is None:
+                self._llm_service = get_llm_service()
+
+            return self._llm_service.generate_explanation(
+                features=features,
+                evidence=evidence,
+                score=score,
+                task_type=task_type,
+                level=level,
+                target=target,
+            )
+        except Exception:
+            logger.exception("Unexpected error during LLM explanation generation")
+            return None
+
+    def _build_rule_based(
+        self,
+        *,
+        features: dict,
+        score: float,
+        level: str,
+        task_type: str,
+        target: str | None,
+        evidence: list[dict],
+    ) -> dict:
+        """Старая rule-based логика — используется как fallback."""
         reasons: list[str] = []
         warnings: list[str] = []
 
-        level = self._build_level(score)
         summary = self._build_summary(score, task_type)
 
         self._append_common_reasons(
@@ -33,12 +126,6 @@ class ExplanationBuilder:
             task_type=task_type,
             reasons=reasons,
             warnings=warnings,
-        )
-
-        evidence = self.evidence_builder.build(
-            data=data,
-            features=features,
-            task_type=task_type,
         )
 
         recommendation = self.text_builder.build(

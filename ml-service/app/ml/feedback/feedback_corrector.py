@@ -33,7 +33,7 @@ class FeedbackCorrector:
     """Number of ratings at which confidence = 0.5 (sigmoid midpoint)."""
 
     def __init__(self) -> None:
-        self.engine = create_engine(settings.training_database_url)
+        self.engine = create_engine(settings.database_url)
         self.session_factory = sessionmaker(bind=self.engine)
 
     def correct(
