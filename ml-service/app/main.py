@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -6,6 +7,7 @@ from fastapi import FastAPI
 from starlette.concurrency import run_in_threadpool
 
 from app.configs.config import settings
+from app.ml.llm.llm_service import get_llm_service
 from app.service.health.health_controller import router as health_router
 from app.ml.models.model_registry import get_model_registry
 from app.service.model.model_controller import router as model_router
@@ -20,10 +22,28 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+async def _preload_llm_background() -> None:
+    """Фоновая предзагрузка LLM-модели.
+
+    Загружается асинхронно, не блокируя старт сервера.
+    Если загрузка не удалась — модель будет загружена по первому требованию (lazy).
+    """
+    try:
+        logger.info("Background preload of LLM model started...")
+        llm = get_llm_service()
+        await run_in_threadpool(llm._ensure_model_loaded)
+        logger.info("Background preload of LLM model completed")
+    except Exception:
+        logger.exception(
+            "Background preload of LLM model failed, will load on demand"
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("START application lifespan startup")
 
+    # 1. Предзагружаем CatBoost-модель (синхронно в thread pool)
     try:
         await run_in_threadpool(get_model_registry().preload_current_model)
     except Exception as exc:
@@ -31,6 +51,9 @@ async def lifespan(app: FastAPI):
 
         if settings.model_fail_fast_on_startup:
             raise
+
+    # 2. Запускаем фоновую предзагрузку LLM (не блокирует startup)
+    asyncio.create_task(_preload_llm_background())
 
     logger.info("END application lifespan startup")
 

@@ -25,3 +25,11 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- Подключение к olms_knowledge и установка pgcrypto
 \c olms_knowledge
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Подключение к olms_geo и установка прав для ml-сервиса
+\c olms_geo
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+GRANT USAGE ON SCHEMA public TO olms_ml_keeper;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO olms_ml_keeper;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO olms_ml_keeper;

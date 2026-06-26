@@ -114,6 +114,12 @@ services:
         condition: service_healthy
     ports:
       - "8030:8030"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8030/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     environment:
       APP_NAME: "Landscape GIS ML Service"
       APP_HOST: "0.0.0.0"
@@ -124,7 +130,7 @@ services:
       DICTIONARY_MICROSERVICE_BASE_URL: "http://dictionary-microservice:8000"
       REQUEST_TIMEOUT_SECONDS: 120
       DICTIONARY_MICROSERVICE_TIMEOUT: 120
-      TRAINING_DATABASE_URL: "postgresql+psycopg://geo:test@db:6000/olms_geo"
+      TRAINING_DATABASE_URL: "postgresql+psycopg://olms_ml_keeper:bvUO-XEWnwgdH.)yt:qy#zS[{ljo8G3s@db:5432/olms_geo"
       DATABASE_URL: "postgresql+psycopg://olms_ml_keeper:bvUO-XEWnwgdH.)yt:qy#zS[{ljo8G3s@db:5432/olms_ml"
       DATABASE_USER: "olms_ml_keeper"
       DATABASE_PASSWORD: "bvUO-XEWnwgdH.)yt:qy#zS[{ljo8G3s"
@@ -166,14 +172,14 @@ services:
       context: VKR_landscape_react_front
       dockerfile: Dockerfile
       args:
-        REACT_APP_API_BASE_URL: "http://gateway:8080"
+        REACT_APP_API_BASE_URL: "http://localhost:8080"
     container_name: frontend
     depends_on:
       - gateway
     ports:
       - "3000:80"
     environment:
-      REACT_APP_API_BASE_URL: "http://gateway:8080"
+      REACT_APP_API_BASE_URL: "http://localhost:8080"
 
 volumes:
   minio_data:
