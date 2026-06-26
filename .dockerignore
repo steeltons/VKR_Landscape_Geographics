@@ -1,0 +1,47 @@
+# Виртуальные окружения и кеши Python
+.venv
+venv
+env
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+build
+dist
+
+# Системные
+.git
+.gitignore
+.DS_Store
+Thumbs.db
+System Volume Information
+
+# IDE
+.idea
+.vscode
+
+# Файлы с секретами
+.env
+.env.*
+!env.py
+
+# Базы SQLite
+*.sqlite
+*.sqlite3
+
+# Проектные артефакты
+**/node_modules
+**/.next
+
+# Docker-файлы
+.vagrant
+docker-compose.yml
+postgres-custom.dockerfile
+init-db.sql
+
+# Все .venv во всех подпроектах (nvidia библиотеки весят гигабайты)
+**/.venv
+**/venv
+
+# README
+README.md

@@ -1,0 +1,35 @@
+# Окружение
+.venv
+venv
+env
+.idea
+__pycache__
+*.pyc
+*.pyo
+
+# Файлы с секретами/конфигами
+.env
+.env.*
+!env.py
+
+# Git
+.git
+.gitignore
+
+# Базы данных (локальные sqlite)
+*.sqlite
+*.sqlite3
+
+# Системные
+.DS_Store
+Thumbs.db
+
+# Проектные артефакты
+*.egg-info
+build
+dist
+*.so
+
+# Скрипты для локального запуска (не нужны в образе)
+run_local.sh
+run_docker.sh

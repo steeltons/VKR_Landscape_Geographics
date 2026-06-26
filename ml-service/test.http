@@ -1,0 +1,146 @@
+### ============================================================
+### Тесты фичи Feedback для ML-Service
+### ============================================================
+### Базовый URL: http://localhost:8030
+### Для Windows используйте: CTRL+ALT+R (JetBrains HTTP Client)
+### Для VSCode: REST Client extension
+### ============================================================
+
+### --------------------------------------------------
+### 1. Создать рекомендацию (agriculture)
+### --------------------------------------------------
+### После успешного выполнения из response извлеките
+### request_id для последующих запросов.
+POST http://localhost:8030/api/v1/recommendations
+Content-Type: application/json
+
+{
+  "task_type": "agriculture",
+  "point_x": 37.6173,
+  "point_y": 55.7558,
+  "target": "Пшеница"
+}
+
+### --------------------------------------------------
+### 2. Создать рекомендацию (construction)
+### --------------------------------------------------
+POST http://localhost:8030/api/v1/recommendations
+Content-Type: application/json
+
+{
+  "task_type": "construction",
+  "point_x": 37.6200,
+  "point_y": 55.7600,
+  "target": "Жилое строительство"
+}
+
+### --------------------------------------------------
+### 3. Создать рекомендацию (ecology)
+### --------------------------------------------------
+POST http://localhost:8030/api/v1/recommendations
+Content-Type: application/json
+
+{
+  "task_type": "ecology",
+  "point_x": 37.6100,
+  "point_y": 55.7500,
+  "target": "Оценка биоразнообразия"
+}
+
+### --------------------------------------------------
+### 4. Поставить оценку рекомендации (rating = 8)
+### --------------------------------------------------
+### Вместо {request_id} подставьте request_id из ответа
+### запроса №1 (например: 550e8400-e29b-41d4-a716-446655440000).
+POST http://localhost:8030/api/v1/recommendations/{{request_id_1}}/feedback
+Content-Type: application/json
+
+{
+  "rating": 8
+}
+
+### --------------------------------------------------
+### 5. Поставить оценку рекомендации (rating = 3)
+### --------------------------------------------------
+POST http://localhost:8030/api/v1/recommendations/{{request_id_2}}/feedback
+Content-Type: application/json
+
+{
+  "rating": 3
+}
+
+### --------------------------------------------------
+### 6. Поставить минимальную оценку (rating = 1)
+### --------------------------------------------------
+POST http://localhost:8030/api/v1/recommendations/{{request_id_3}}/feedback
+Content-Type: application/json
+
+{
+  "rating": 1
+}
+
+### --------------------------------------------------
+### 7. Поставить максимальную оценку (rating = 10)
+### --------------------------------------------------
+### Создадим ещё одну рекомендацию и сразу оценим её.
+### Шаг 1: создаём рекомендацию
+POST http://localhost:8030/api/v1/recommendations
+Content-Type: application/json
+
+{
+  "task_type": "agriculture",
+  "point_x": 37.6300,
+  "point_y": 55.7700,
+  "target": "Кукуруза"
+}
+
+### --------------------------------------------------
+### 8. Оценить созданную рекомендацию на 10
+### --------------------------------------------------
+### Шаг 2: ставим оценку 10
+### Вместо {request_id} подставьте request_id из ответа запроса №7.
+POST http://localhost:8030/api/v1/recommendations/{{request_id_7}}/feedback
+Content-Type: application/json
+
+{
+  "rating": 10
+}
+
+### --------------------------------------------------
+### 9. Получить текущую оценку рекомендации
+### --------------------------------------------------
+### Вместо {request_id} подставьте request_id из запроса №1.
+GET http://localhost:8030/api/v1/recommendations/{{request_id_1}}/feedback
+
+### --------------------------------------------------
+### 10. Попытка оценить несуществующий request_id
+### --------------------------------------------------
+### Ожидается: 404 Not Found
+POST http://localhost:8030/api/v1/recommendations/00000000-0000-0000-0000-000000000000/feedback
+Content-Type: application/json
+
+{
+  "rating": 5
+}
+
+### --------------------------------------------------
+### (Дополнительно) Ошибка валидации: rating вне диапазона
+### --------------------------------------------------
+### Ожидается: 422 Validation Error
+POST http://localhost:8030/api/v1/recommendations/{{request_id_1}}/feedback
+Content-Type: application/json
+
+{
+  "rating": 777
+}
+
+### --------------------------------------------------
+### (Дополнительно) Ошибка валидации: rating = 0
+### --------------------------------------------------
+### Ожидается: 422 Validation Error (min: 1)
+POST http://localhost:8030/api/v1/recommendations/{{request_id_1}}/feedback
+Content-Type: application/json
+
+{
+  "rating": 0
+}

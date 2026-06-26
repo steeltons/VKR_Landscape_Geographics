@@ -1,0 +1,16 @@
+[project]
+name = "olms-minio-component"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "minio>=7.2.7,<8",
+    "pydantic>=2",
+    "pydantic-settings>=2",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["olms_minio_component"]
